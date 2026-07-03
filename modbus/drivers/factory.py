@@ -3,42 +3,96 @@ modbus/drivers/factory.py
 
 Energy Monitor V2
 
-Version: 1.0.0
+Driver factory.
 """
 
 from __future__ import annotations
 
+from typing import Type
+
 from modbus.drivers.base import BaseDriver
+from modbus.exceptions import DriverError
 
 
 class DriverFactory:
-    """Creates and caches driver instances."""
+    """
+    Factory for Modbus drivers.
+    """
 
-    _drivers: dict[str, BaseDriver] = {}
+    _drivers: dict[str, Type[BaseDriver]] = {}
+
+    # ---------------------------------------------------------
+    # Registration
+    # ---------------------------------------------------------
 
     @classmethod
     def register(
         cls,
-        driver: BaseDriver,
+        driver: Type[BaseDriver],
     ) -> None:
+        """
+        Register driver class.
+        """
 
-        cls._drivers[driver.name.lower()] = driver
+        if not driver.NAME:
+            raise DriverError(
+                f"{driver.__name__} has empty NAME."
+            )
+
+        name = driver.NAME.lower()
+
+        if name in cls._drivers:
+            raise DriverError(
+                f"Driver '{name}' already registered."
+            )
+
+        cls._drivers[name] = driver
+
+    # ---------------------------------------------------------
+    # Access
+    # ---------------------------------------------------------
 
     @classmethod
     def get(
         cls,
         name: str,
     ) -> BaseDriver:
+        """
+        Return driver instance.
+        """
 
-        key = name.lower()
+        try:
 
-        if key not in cls._drivers:
+            return cls._drivers[name.lower()]()
 
-            raise KeyError(f"Driver '{name}' not registered.")
+        except KeyError as ex:
 
-        return cls._drivers[key]
+            raise DriverError(
+                f"Unknown driver '{name}'."
+            ) from ex
 
     @classmethod
-    def registered(cls) -> list[str]:
+    def exists(
+        cls,
+        name: str,
+    ) -> bool:
+
+        return name.lower() in cls._drivers
+
+    @classmethod
+    def names(cls) -> list[str]:
 
         return sorted(cls._drivers.keys())
+
+    @classmethod
+    def count(cls) -> int:
+
+        return len(cls._drivers)
+
+    @classmethod
+    def clear(cls) -> None:
+        """
+        Used by unit tests.
+        """
+
+        cls._drivers.clear()

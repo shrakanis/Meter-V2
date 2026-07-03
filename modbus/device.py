@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Any
 
 from common.enums import MeterState
 from common.measurements import Measurements
@@ -27,6 +28,8 @@ class Device:
     Runtime:
         Measurements
         Connection state
+        Device information
+        Extra measurements
     """
 
     # ------------------------------------------------------------------
@@ -58,10 +61,18 @@ class Device:
     )
 
     # ------------------------------------------------------------------
-    # Extra values
+    # Static information
     # ------------------------------------------------------------------
 
-    extra: dict[str, float] = field(
+    info: dict[str, Any] = field(
+        default_factory=dict
+    )
+
+    # ------------------------------------------------------------------
+    # Extra measurements
+    # ------------------------------------------------------------------
+
+    extra: dict[str, Any] = field(
         default_factory=dict
     )
 
@@ -94,38 +105,37 @@ class Device:
     # ==============================================================
 
     def online(self) -> None:
-        """Device communication successful."""
+        """
+        Device communication successful.
+        """
 
         self.connected = True
-
         self.state = MeterState.ONLINE
-
         self.last_error = ""
-
         self.last_update = datetime.now()
 
     def offline(
         self,
         error: str = "",
     ) -> None:
-        """Device is offline."""
+        """
+        Device is offline.
+        """
 
         self.connected = False
-
         self.state = MeterState.OFFLINE
-
         self.last_error = error
 
     def error(
         self,
         error: str,
     ) -> None:
-        """Device communication error."""
+        """
+        Device communication error.
+        """
 
         self.connected = False
-
         self.state = MeterState.ERROR
-
         self.last_error = error
 
     # ==============================================================
@@ -133,10 +143,11 @@ class Device:
     # ==============================================================
 
     def clear(self) -> None:
-        """Clear runtime measurements."""
+        """
+        Clear runtime measurements.
+        """
 
         self.measurements.reset()
-
         self.extra.clear()
 
     def update_timestamp(self) -> None:
@@ -155,6 +166,15 @@ class Device:
             datetime.now() - self.last_update
         ).total_seconds()
 
+    @property
+    def has_info(self) -> bool:
+        """
+        Returns True if static information
+        has already been read.
+        """
+
+        return bool(self.info)
+
     # ==============================================================
     # Debug
     # ==============================================================
@@ -165,5 +185,10 @@ class Device:
             f"Device("
             f"id={self.id}, "
             f"name='{self.name}', "
+            f"driver='{self.driver}', "
             f"state={self.state.name})"
         )
+
+    def __repr__(self) -> str:
+
+        return self.__str__()

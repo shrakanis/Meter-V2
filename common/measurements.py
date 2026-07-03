@@ -3,37 +3,101 @@ common/measurements.py
 
 Energy Monitor V2
 
-Version: 1.1.0
+Common measurement models.
 """
+
+from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from common.current import Current
-from common.energy import Energy
-from common.power import Power
-from common.voltage import Voltage
 
+# ----------------------------------------------------------------------
+# Phase measurement
+# ----------------------------------------------------------------------
+
+@dataclass(slots=True)
+class PhaseMeasurement:
+    """
+    Measurement containing total and/or phase values.
+
+    Not every meter provides every value.
+    Missing values remain None.
+    """
+
+    total: float | None = None
+
+    l1: float | None = None
+    l2: float | None = None
+    l3: float | None = None
+
+    average: float | None = None
+
+
+# ----------------------------------------------------------------------
+# Energy
+# ----------------------------------------------------------------------
+
+@dataclass(slots=True)
+class Energy:
+
+    import_active: float | None = None
+
+    export_active: float | None = None
+
+    import_reactive: float | None = None
+
+    export_reactive: float | None = None
+
+
+# ----------------------------------------------------------------------
+# Measurements
+# ----------------------------------------------------------------------
 
 @dataclass(slots=True)
 class Measurements:
-    """Runtime measurements."""
+    """
+    Standard measurements supported by the application.
 
-    voltage: Voltage = field(default_factory=Voltage)
+    Any meter specific values should be stored in:
 
-    current: Current = field(default_factory=Current)
+        device.extra
+    """
 
-    power: Power = field(default_factory=Power)
+    voltage: PhaseMeasurement = field(
+        default_factory=PhaseMeasurement
+    )
 
-    energy: Energy = field(default_factory=Energy)
+    current: PhaseMeasurement = field(
+        default_factory=PhaseMeasurement
+    )
 
-    frequency: float = 0.0
+    active_power: PhaseMeasurement = field(
+        default_factory=PhaseMeasurement
+    )
+
+    reactive_power: PhaseMeasurement = field(
+        default_factory=PhaseMeasurement
+    )
+
+    apparent_power: PhaseMeasurement = field(
+        default_factory=PhaseMeasurement
+    )
+
+    power_factor: PhaseMeasurement = field(
+        default_factory=PhaseMeasurement
+    )
+
+    frequency: float | None = None
+
+    energy: Energy = field(
+        default_factory=Energy
+    )
 
     def reset(self) -> None:
-        """Reset all measurements."""
+        """
+        Reset all measurements.
+        """
 
-        self.voltage = Voltage()
-        self.current = Current()
-        self.power = Power()
-        self.energy = Energy()
-
-        self.frequency = 0.0
+        self.__dict__.update(
+            Measurements().__dict__
+        )
