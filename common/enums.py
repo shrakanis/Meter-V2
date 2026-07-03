@@ -1,11 +1,3 @@
-"""
-common/enums.py
-
-Energy Monitor V2
-
-Version: 1.0.0
-"""
-
 from enum import Enum, IntEnum
 
 
@@ -16,24 +8,27 @@ class Protocol(IntEnum):
     RTU = 2
 
 
-class MeterState(IntEnum):
-    """Current meter state."""
+class ByteOrder(Enum):
+    """32-bit register byte order."""
 
+    ABCD = "ABCD"
+    CDAB = "CDAB"
+    BADC = "BADC"
+    DCBA = "DCBA"
+
+
+class MeterState(IntEnum):
     OFFLINE = 0
     ONLINE = 1
     ERROR = 2
 
 
 class UserRole(IntEnum):
-    """User permissions."""
-
     USER = 0
     ADMIN = 1
 
 
 class LogLevel(str, Enum):
-    """Application log level."""
-
     DEBUG = "DEBUG"
     INFO = "INFO"
     WARNING = "WARNING"
@@ -42,8 +37,6 @@ class LogLevel(str, Enum):
 
 
 class AlarmState(IntEnum):
-    """Alarm state."""
-
     NORMAL = 0
     ACTIVE = 1
     ACKNOWLEDGED = 2
