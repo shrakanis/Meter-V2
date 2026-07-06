@@ -1,35 +1,87 @@
+
 """
-modbus/clients/rtu.py
+modbus/client_manager.py
 
 Energy Monitor V2
+
+Shared Modbus client manager.
 """
 
-from pymodbus.client import ModbusSerialClient
+from __future__ import annotations
 
-from modbus.clients.base_client import BaseModbusClient
+from threading import Lock
+
+from common.enums import Protocol
+from database.models import Meter
+from modbus.clients.base import BaseClient
+from modbus.clients.rtu import RTUClient
+from modbus.clients.tcp import TCPClient
 
 
-class RTUClient(BaseModbusClient):
+class ClientManager:
+    """Caches TCP/RTU clients shared by multiple meters."""
 
-    def __init__(
-        self,
-        port: str,
-        baudrate: int = 9600,
-        bytesize: int = 8,
-        parity: str = "N",
-        stopbits: int = 1,
-        timeout: float = 1.0,
-    ) -> None:
+    def __init__(self) -> None:
+        self._clients: dict[str, BaseClient] = {}
+        self._lock = Lock()
 
-        super().__init__()
-
-        self.port = port
-
-        self._client = ModbusSerialClient(
-            port=port,
-            baudrate=baudrate,
-            bytesize=bytesize,
-            parity=parity,
-            stopbits=stopbits,
-            timeout=timeout,
+    def _key(self, meter: Meter) -> str:
+        if meter.protocol == Protocol.TCP:
+            return f"tcp:{meter.address}:{meter.port}"
+        return (
+            f"rtu:{meter.serial_port}:"
+            f"{meter.baudrate}:{meter.bytesize}:"
+            f"{meter.parity}:{meter.stopbits}"
         )
+
+    def _create(self, meter: Meter) -> BaseClient:
+        if meter.protocol == Protocol.TCP:
+            return TCPClient(
+                host=meter.address,
+                port=meter.port,
+                timeout=meter.timeout,
+            )
+
+        return RTUClient(
+            port=meter.serial_port,
+            baudrate=meter.baudrate,
+            bytesize=meter.bytesize,
+            parity=meter.parity,
+            stopbits=meter.stopbits,
+            timeout=meter.timeout,
+        )
+
+    def get_client(self, meter: Meter) -> BaseClient:
+        key = self._key(meter)
+
+        with self._lock:
+            client = self._clients.get(key)
+
+            if client is None:
+                client = self._create(meter)
+                self._clients[key] = client
+
+            return client
+
+    def close(self, meter: Meter) -> None:
+        key = self._key(meter)
+
+        with self._lock:
+            client = self._clients.pop(key, None)
+
+        if client is not None:
+            client.disconnect()
+
+    def close_all(self) -> None:
+        with self._lock:
+            clients = list(self._clients.values())
+            self._clients.clear()
+
+        for client in clients:
+            try:
+                client.disconnect()
+            except Exception:
+                pass
+
+    def __len__(self) -> int:
+        return len(self._clients)

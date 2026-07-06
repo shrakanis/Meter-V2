@@ -10,8 +10,10 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
+from common.enums import ByteOrder, RegisterType
 from modbus.clients.base import BaseClient
 from modbus.device import Device
+from modbus.register_block import RegisterBlock
 
 
 class BaseDriver(ABC):
@@ -34,8 +36,15 @@ class BaseDriver(ABC):
     #: Driver name used in database
     NAME: str = ""
 
-    #: Register byte order
-    BYTE_ORDER = None
+    #: Register type (Input/Holding)
+    REGISTER_TYPE = RegisterType.INPUT
+
+    #: Float byte order
+    BYTE_ORDER = ByteOrder.ABCD
+
+    # ------------------------------------------------------------------
+    # Driver interface
+    # ------------------------------------------------------------------
 
     @abstractmethod
     def read(
@@ -44,50 +53,93 @@ class BaseDriver(ABC):
         device: Device,
     ) -> None:
         """
-        Read all required registers and update Device.
-
-        Raises:
-            ModbusError
+        Read runtime measurements.
         """
         raise NotImplementedError
 
-    # ---------------------------------------------------------
-    # Helpers
-    # ---------------------------------------------------------
+    def read_info(
+        self,
+        client: BaseClient,
+        device: Device,
+    ) -> None:
+        """
+        Read static device information.
+
+        Override only if the meter supports it.
+        """
+        return
+
+    # ------------------------------------------------------------------
+    # Register helpers
+    # ------------------------------------------------------------------
+
+    def read_block(
+        self,
+        client: BaseClient,
+        device: Device,
+        address: int,
+        count: int,
+    ) -> RegisterBlock:
+        """
+        Read one Modbus register block.
+        """
+
+        if self.REGISTER_TYPE == RegisterType.INPUT:
+            return client.read_input_registers(
+                slave=device.slave,
+                address=address,
+                count=count,
+            )
+
+        return client.read_holding_registers(
+            slave=device.slave,
+            address=address,
+            count=count,
+        )
+
+    # ------------------------------------------------------------------
+    # Scaling helpers
+    # ------------------------------------------------------------------
 
     @staticmethod
     def apply_ct(
-        value: float,
+        value: float | None,
         device: Device,
-    ) -> float:
+    ) -> float | None:
         """
         Apply CT ratio.
         """
+
+        if value is None:
+            return None
 
         return value * device.meter.ct
 
     @staticmethod
     def apply_pt(
-        value: float,
+        value: float | None,
         device: Device,
-    ) -> float:
+    ) -> float | None:
         """
         Apply PT ratio.
         """
 
+        if value is None:
+            return None
+
         return value * device.meter.pt
 
-    @staticmethod
+    @classmethod
     def apply_ct_pt(
-        value: float,
+        cls,
+        value: float | None,
         device: Device,
-    ) -> float:
+    ) -> float | None:
         """
         Apply CT and PT ratios.
         """
 
-        return (
-            value
-            * device.meter.ct
-            * device.meter.pt
-        )
+        value = cls.apply_ct(value, device)
+        value = cls.apply_pt(value, device)
+
+        return value

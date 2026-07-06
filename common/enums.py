@@ -40,3 +40,7 @@ class AlarmState(IntEnum):
     NORMAL = 0
     ACTIVE = 1
     ACKNOWLEDGED = 2
+
+class RegisterType(Enum):
+    INPUT = 4
+    HOLDING = 3
