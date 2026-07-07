@@ -25,15 +25,15 @@ logger = logging.getLogger(__name__)
 
 class DeviceManager:
     """
-    Loads all configured meters and polls them.
+    Loads all configured meters and continuously polls them.
 
-    Responsibilities:
-
-    - Load meters
-    - Create Device objects
-    - Manage polling
-    - Update device state
-    - Handle communication errors
+    Responsibilities
+    ----------------
+    * Load enabled meters from database
+    * Create runtime Device objects
+    * Poll all devices
+    * Handle communication errors
+    * Keep runtime state updated
     """
 
     def __init__(
@@ -54,8 +54,10 @@ class DeviceManager:
 
         self._thread: threading.Thread | None = None
 
+        self._lock = threading.RLock()
+
     # -------------------------------------------------------------
-    # Loading
+    # Configuration
     # -------------------------------------------------------------
 
     def load(self) -> None:
@@ -63,21 +65,23 @@ class DeviceManager:
         Load enabled meters from database.
         """
 
-        self._devices.clear()
+        with self._lock:
 
-        meters = self._repository.all()
+            self._devices.clear()
 
-        for meter in meters:
+            meters = self._repository.get_all()
 
-            if not meter.enabled:
-                continue
+            for meter in meters:
 
-            if meter.id is None:
-                continue
+                if not meter.enabled:
+                    continue
 
-            self._devices[meter.id] = Device(
-                meter=meter,
-            )
+                if meter.id is None:
+                    continue
+
+                self._devices[meter.id] = Device(
+                    meter=meter,
+                )
 
         logger.info(
             "Loaded %d devices.",
@@ -86,7 +90,7 @@ class DeviceManager:
 
     def reload(self) -> None:
         """
-        Reload configuration.
+        Reload configuration from database.
         """
 
         self.stop()
@@ -104,31 +108,42 @@ class DeviceManager:
         meter_id: int,
     ) -> Device | None:
 
-        return self._devices.get(meter_id)
+        with self._lock:
+
+            return self._devices.get(meter_id)
 
     def all(self) -> list[Device]:
 
-        return list(self._devices.values())
+        with self._lock:
+
+            return list(self._devices.values())
 
     def count(self) -> int:
 
-        return len(self._devices)
+        with self._lock:
+
+            return len(self._devices)
 
     def online(self) -> list[Device]:
 
-        return [
-            d
-            for d in self._devices.values()
-            if d.connected
-        ]
+        with self._lock:
+
+            return [
+                device
+                for device in self._devices.values()
+                if device.connected
+            ]
 
     def offline(self) -> list[Device]:
 
-        return [
-            d
-            for d in self._devices.values()
-            if not d.connected
-        ]
+        with self._lock:
+
+            return [
+                device
+                for device in self._devices.values()
+                if not device.connected
+            ]
+
     # -------------------------------------------------------------
     # Thread control
     # -------------------------------------------------------------
@@ -141,6 +156,9 @@ class DeviceManager:
         if self._running:
             return
 
+        if not self._devices:
+            self.load()
+
         self._running = True
 
         self._thread = threading.Thread(
@@ -151,7 +169,9 @@ class DeviceManager:
 
         self._thread.start()
 
-        logger.info("Device manager started.")
+        logger.info(
+            "Device manager started."
+        )
 
     def stop(self) -> None:
         """
@@ -169,10 +189,11 @@ class DeviceManager:
 
             self._thread = None
 
-        self._client_manager.disconnect_all()
+        self._client_manager.close_all()
 
-        logger.info("Device manager stopped.")
-
+        logger.info(
+            "Device manager stopped."
+        )
     # -------------------------------------------------------------
     # Poll loop
     # -------------------------------------------------------------
@@ -186,7 +207,14 @@ class DeviceManager:
 
             cycle_start = perf_counter()
 
-            for device in self._devices.values():
+            with self._lock:
+
+                devices = list(self._devices.values())
+
+            for device in devices:
+
+                if not self._running:
+                    break
 
                 self._poll_device(device)
 
@@ -197,7 +225,8 @@ class DeviceManager:
             if delay > 0:
 
                 time.sleep(delay)
-        # -------------------------------------------------------------
+
+    # -------------------------------------------------------------
     # Poll one device
     # -------------------------------------------------------------
 
@@ -206,53 +235,66 @@ class DeviceManager:
         device: Device,
     ) -> None:
         """
-        Poll a single device.
+        Poll one Modbus device.
         """
 
         start = perf_counter()
 
         try:
 
-            # -----------------------------------------------------
-            # Get communication client
-            # -----------------------------------------------------
+            # -------------------------------------------------
+            # Shared Modbus client
+            # -------------------------------------------------
 
-            client = self._client_manager.get(
+            client = self._client_manager.get_client(
                 device.meter
             )
 
-            # -----------------------------------------------------
-            # Get driver
-            # -----------------------------------------------------
+            # -------------------------------------------------
+            # Driver
+            # -------------------------------------------------
 
             driver = DriverFactory.get(
                 device.driver
             )
 
-            # -----------------------------------------------------
-            # Read device
-            # -----------------------------------------------------
+            # -------------------------------------------------
+            # Static information (read once)
+            # -------------------------------------------------
+
+            if not device.has_info:
+
+                try:
+
+                    driver.read_info(
+                        client=client,
+                        device=device,
+                    )
+
+                except AttributeError:
+                    #
+                    # Driver does not implement read_info()
+                    #
+                    pass
+
+            # -------------------------------------------------
+            # Read measurements
+            # -------------------------------------------------
 
             driver.read(
                 client=client,
                 device=device,
             )
 
-            # -----------------------------------------------------
-            # Success
-            # -----------------------------------------------------
-
-            device.response_time = (
-                perf_counter() - start
-            )
-
             device.online()
 
-        except ModbusError as ex:
-
-            device.response_time = (
-                perf_counter() - start
+            logger.debug(
+                "[%s] %.1f ms",
+                device.name,
+                (perf_counter() - start) * 1000,
             )
+
+        except ModbusError as ex:
 
             device.clear()
 
@@ -263,32 +305,56 @@ class DeviceManager:
                 device.name,
                 ex,
             )
+
+        except Exception:
+
+            logger.exception(
+                "Unexpected error while polling '%s'",
+                device.name,
+            )
+
+            device.clear()
+
+            device.error(
+                "Unexpected error"
+            )
+
+        finally:
+
+            device.response_time = (
+                perf_counter() - start
+            )
     # -------------------------------------------------------------
     # Python helpers
     # -------------------------------------------------------------
 
     def __iter__(self):
-        """
-        Iterate over loaded devices.
-        """
 
-        return iter(self._devices.values())
+        with self._lock:
+
+            return iter(list(self._devices.values()))
 
     def __len__(self) -> int:
 
-        return len(self._devices)
+        with self._lock:
+
+            return len(self._devices)
 
     def __contains__(
         self,
         meter_id: int,
     ) -> bool:
 
-        return meter_id in self._devices
+        with self._lock:
+
+            return meter_id in self._devices
 
     def __repr__(self) -> str:
 
-        return (
-            f"DeviceManager("
-            f"devices={len(self)}, "
-            f"running={self._running})"
-        )
+        with self._lock:
+
+            return (
+                f"DeviceManager("
+                f"devices={len(self._devices)}, "
+                f"running={self._running})"
+            )

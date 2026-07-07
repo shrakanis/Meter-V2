@@ -2,8 +2,6 @@
 database/repositories.py
 
 Energy Monitor V2
-
-Version: 1.0.0
 """
 
 from __future__ import annotations
@@ -34,21 +32,21 @@ class MeterRepository:
             """
         )
 
-        meters = []
+        return [
+            self._row_to_meter(row)
+            for row in rows
+        ]
 
-        for row in rows:
-
-            meters.append(self._row_to_meter(row))
-
-        return meters
-
-    def get_by_id(self, meter_id: int) -> Meter | None:
+    def get_by_id(
+        self,
+        meter_id: int,
+    ) -> Meter | None:
 
         row = self.database.query_one(
             """
             SELECT *
             FROM meters
-            WHERE id = ?
+            WHERE id=?
             """,
             (meter_id,),
         )
@@ -62,40 +60,74 @@ class MeterRepository:
     # Create
     # ------------------------------------------------------------------
 
-    def add(self, meter: Meter) -> int:
+    def add(
+        self,
+        meter: Meter,
+    ) -> int:
 
         cursor = self.database.execute(
             """
             INSERT INTO meters(
 
-                name,
                 enabled,
+
+                name,
+                description,
+
                 driver,
                 protocol,
+
                 address,
                 port,
+
+                serial_port,
+                baudrate,
+                bytesize,
+                parity,
+                stopbits,
+
                 slave,
+
+                timeout,
+
                 ct,
-                pt,
-                location,
-                description
+                pt
 
             )
 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES(
+
+                ?, ?, ?, ?, ?,
+                ?, ?,
+                ?, ?, ?, ?, ?,
+                ?, ?, ?, ?
+
+            )
             """,
             (
-                meter.name,
                 int(meter.enabled),
+
+                meter.name,
+                meter.description,
+
                 meter.driver,
                 int(meter.protocol),
+
                 meter.address,
                 meter.port,
+
+                meter.serial_port,
+                meter.baudrate,
+                meter.bytesize,
+                meter.parity,
+                meter.stopbits,
+
                 meter.slave,
+
+                meter.timeout,
+
                 meter.ct,
                 meter.pt,
-                meter.location,
-                meter.description,
             ),
         )
 
@@ -107,7 +139,10 @@ class MeterRepository:
     # Update
     # ------------------------------------------------------------------
 
-    def update(self, meter: Meter) -> None:
+    def update(
+        self,
+        meter: Meter,
+    ) -> None:
 
         self.database.execute(
             """
@@ -115,32 +150,57 @@ class MeterRepository:
 
             SET
 
-                name=?,
                 enabled=?,
+
+                name=?,
+                description=?,
+
                 driver=?,
                 protocol=?,
+
                 address=?,
                 port=?,
+
+                serial_port=?,
+                baudrate=?,
+                bytesize=?,
+                parity=?,
+                stopbits=?,
+
                 slave=?,
+
+                timeout=?,
+
                 ct=?,
-                pt=?,
-                location=?,
-                description=?
+                pt=?
 
             WHERE id=?
             """,
             (
-                meter.name,
                 int(meter.enabled),
+
+                meter.name,
+                meter.description,
+
                 meter.driver,
                 int(meter.protocol),
+
                 meter.address,
                 meter.port,
+
+                meter.serial_port,
+                meter.baudrate,
+                meter.bytesize,
+                meter.parity,
+                meter.stopbits,
+
                 meter.slave,
+
+                meter.timeout,
+
                 meter.ct,
                 meter.pt,
-                meter.location,
-                meter.description,
+
                 meter.id,
             ),
         )
@@ -149,12 +209,15 @@ class MeterRepository:
     # Delete
     # ------------------------------------------------------------------
 
-    def delete(self, meter_id: int) -> None:
+    def delete(
+        self,
+        meter_id: int,
+    ) -> None:
 
         self.database.execute(
             """
             DELETE FROM meters
-            WHERE id = ?
+            WHERE id=?
             """,
             (meter_id,),
         )
@@ -170,26 +233,28 @@ class MeterRepository:
 
             id=row["id"],
 
-            name=row["name"],
-
             enabled=bool(row["enabled"]),
+
+            name=row["name"],
+            description=row["description"] or "",
 
             driver=row["driver"],
 
             protocol=Protocol(row["protocol"]),
 
-            address=row["address"],
-
+            address=row["address"] or "",
             port=row["port"],
+
+            serial_port=row["serial_port"] or "",
+            baudrate=row["baudrate"],
+            bytesize=row["bytesize"],
+            parity=row["parity"],
+            stopbits=row["stopbits"],
 
             slave=row["slave"],
 
+            timeout=row["timeout"],
+
             ct=row["ct"],
-
             pt=row["pt"],
-
-            location=row["location"] or "",
-
-            description=row["description"] or "",
-
         )

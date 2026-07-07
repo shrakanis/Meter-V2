@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from common.enums import ByteOrder, RegisterType
 from modbus.clients.base import BaseClient
 from modbus.device import Device
-from modbus.register_block import RegisterBlock
+from common.register_block import RegisterBlock
 
 
 class BaseDriver(ABC):
@@ -67,7 +67,7 @@ class BaseDriver(ABC):
 
         Override only if the meter supports it.
         """
-        return
+        pass
 
     # ------------------------------------------------------------------
     # Register helpers
@@ -90,12 +90,15 @@ class BaseDriver(ABC):
                 address=address,
                 count=count,
             )
-
-        return client.read_holding_registers(
-            slave=device.slave,
-            address=address,
-            count=count,
-        )
+        elif self.REGISTER_TYPE == RegisterType.HOLDING:
+            return client.read_holding_registers(
+                slave=device.slave,
+                address=address,
+                count=count,
+            )
+        raise ValueError(
+        f"Unsupported register type: {self.REGISTER_TYPE}"
+)
 
     # ------------------------------------------------------------------
     # Scaling helpers
