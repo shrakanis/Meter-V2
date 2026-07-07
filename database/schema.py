@@ -33,20 +33,35 @@ def create_schema(connection: sqlite3.Connection) -> None:
     )
 
     # ------------------------------------------------------------------
-    # Users
+    # Plans
     # ------------------------------------------------------------------
 
     cursor.execute(
         """
-        CREATE TABLE IF NOT EXISTS users (
+        CREATE TABLE IF NOT EXISTS plans (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            image TEXT NOT NULL,
+            active INTEGER DEFAULT 0
+        )
+        """
+    )
 
-            username TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
+    # ------------------------------------------------------------------
+    # Meter models
+    # ------------------------------------------------------------------
 
-            role INTEGER NOT NULL DEFAULT 0,
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS meter_models (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
 
-            created_at TEXT NOT NULL
+            reg_kw INTEGER NOT NULL,
+            reg_kwh INTEGER NOT NULL,
+
+            meter_type INTEGER NOT NULL DEFAULT 1,
+            transform REAL NOT NULL DEFAULT 1
         )
         """
     )
@@ -58,95 +73,81 @@ def create_schema(connection: sqlite3.Connection) -> None:
     cursor.execute(
         """
         CREATE TABLE IF NOT EXISTS meters (
-
             id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-            enabled INTEGER NOT NULL DEFAULT 1,
-
             name TEXT NOT NULL,
-            description TEXT NOT NULL DEFAULT '',
 
-            driver TEXT NOT NULL,
+            ip TEXT NOT NULL,
 
-            protocol INTEGER NOT NULL,
+            slave INTEGER NOT NULL,
 
-            address TEXT,
-            port INTEGER DEFAULT 502,
+            model_id INTEGER,
 
-            serial_port TEXT,
-            baudrate INTEGER DEFAULT 9600,
-            bytesize INTEGER DEFAULT 8,
-            parity TEXT DEFAULT 'N',
-            stopbits INTEGER DEFAULT 1,
+            meter_type INTEGER NOT NULL,
 
-            slave INTEGER NOT NULL DEFAULT 1,
+            reg_kw INTEGER NOT NULL,
 
-            ct REAL NOT NULL DEFAULT 1.0,
-            pt REAL NOT NULL DEFAULT 1.0,
+            reg_kwh INTEGER NOT NULL,
 
-            timeout REAL NOT NULL DEFAULT 1.0
+            transform REAL NOT NULL DEFAULT 1,
+
+            limit_kw REAL DEFAULT 0,
+
+            state INTEGER DEFAULT 3,
+
+            enabled INTEGER DEFAULT 1,
+
+            pos_x INTEGER DEFAULT 100,
+
+            pos_y INTEGER DEFAULT 100,
+
+            description TEXT DEFAULT '',
+
+            FOREIGN KEY(model_id)
+                REFERENCES meter_models(id)
         )
         """
     )
 
     # ------------------------------------------------------------------
-    # Database version
+    # Monthly readings
     # ------------------------------------------------------------------
 
     cursor.execute(
         """
-        CREATE TABLE IF NOT EXISTS schema_info (
+        CREATE TABLE IF NOT EXISTS monthly_readings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
 
-            version INTEGER NOT NULL
+            meter_id INTEGER NOT NULL,
+
+            reading REAL NOT NULL,
+
+            created_at TEXT NOT NULL,
+
+            FOREIGN KEY(meter_id)
+                REFERENCES meters(id)
         )
         """
     )
 
-    cursor.execute("SELECT COUNT(*) FROM schema_info")
-
-    if cursor.fetchone()[0] == 0:
-
-        cursor.execute(
-            "INSERT INTO schema_info(version) VALUES(?)",
-            (SCHEMA_VERSION,),
-        )
-
-    connection.commit()
-
-
-def get_schema_version(
-    connection: sqlite3.Connection,
-) -> int:
-
-    cursor = connection.cursor()
+    # ------------------------------------------------------------------
+    # Logs
+    # ------------------------------------------------------------------
 
     cursor.execute(
-        "SELECT version FROM schema_info LIMIT 1"
+        """
+        CREATE TABLE IF NOT EXISTS logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            created_at TEXT NOT NULL,
+
+            level TEXT NOT NULL,
+
+            module TEXT NOT NULL,
+
+            message TEXT NOT NULL
+        )
+        """
     )
-
-    row = cursor.fetchone()
-
-    if row is None:
-        return 0
-
-    return int(row[0])
-
-
-def migrate(
-    connection: sqlite3.Connection,
-) -> None:
-    """
-    Future database migrations.
-    """
-
-    version = get_schema_version(connection)
-
-    if version == SCHEMA_VERSION:
-        return
-
-    # Future migrations here
-    #
-    # if version < 2:
-    #     ...
 
     connection.commit()
