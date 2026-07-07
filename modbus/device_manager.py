@@ -1,5 +1,5 @@
 """
-modbus/manager.py
+modbus/device_manager.py
 
 Energy Monitor V2
 
