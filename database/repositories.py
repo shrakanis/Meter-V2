@@ -24,7 +24,7 @@ class MeterRepository:
 
     def get_all(self) -> list[Meter]:
 
-        rows = self.database.query(
+        rows = self.database.query_all(
             """
             SELECT *
             FROM meters

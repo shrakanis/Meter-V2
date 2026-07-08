@@ -1,25 +1,19 @@
-from flask import Flask
+"""
+app.py
 
-from web.pages import pages
+Energy Monitor V2
 
+Application entry point.
+"""
 
-def create_app():
-
-    app = Flask(__name__)
-
-    app.config["SECRET_KEY"] = "EnergyMonitorV2"
-
-    app.register_blueprint(pages)
-
-    return app
-
+from bootstrap import create_app
 
 app = create_app()
 
-
 if __name__ == "__main__":
+
     app.run(
         host="0.0.0.0",
         port=5000,
-        debug=True
+        debug=True,
     )
