@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from common.enums import ByteOrder, RegisterType
 from modbus.clients.base import BaseClient
 from modbus.device import Device
-from common.register_block import RegisterBlock
+from modbus.register_block import RegisterBlock
 
 
 class BaseDriver(ABC):

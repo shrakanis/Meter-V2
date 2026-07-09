@@ -6,10 +6,10 @@ Energy Monitor V2
 
 from pymodbus.client import ModbusSerialClient
 
-from modbus.clients.base_client import BaseModbusClient
+from modbus.clients.base import BaseClient
 
 
-class RTUClient(BaseModbusClient):
+class RTUClient(BaseClient):
 
     def __init__(
         self,

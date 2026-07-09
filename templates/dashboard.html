@@ -1,24 +1,182 @@
 {% extends "base.html" %}
 
+{% block title %}
+Dashboard
+{% endblock %}
+
 {% block content %}
 
-<div class="card">
+<h2 class="mb-4">
+
+    <i class="bi bi-speedometer2"></i>
+
+    Dashboard
+
+</h2>
+
+<div class="row g-4">
+
+    <div class="col-lg-4">
+
+        <div class="card shadow-sm">
+
+            <div class="card-body">
+
+                <h6 class="text-muted">
+
+                    Configured Meters
+
+                </h6>
+
+                <h2>
+
+                    {{ total }}
+
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-lg-4">
+
+        <div class="card shadow-sm border-success">
+
+            <div class="card-body">
+
+                <h6 class="text-success">
+
+                    Online
+
+                </h6>
+
+                <h2 class="text-success">
+
+                    {{ online }}
+
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="col-lg-4">
+
+        <div class="card shadow-sm border-danger">
+
+            <div class="card-body">
+
+                <h6 class="text-danger">
+
+                    Offline
+
+                </h6>
+
+                <h2 class="text-danger">
+
+                    {{ offline }}
+
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="card shadow-sm mt-4">
 
     <div class="card-header">
 
-        Dashboard
+        <strong>System status</strong>
 
     </div>
 
     <div class="card-body">
 
-        <h3>Energy Monitor V2</h3>
+        {% if total == 0 %}
 
-        <p>
+        <div class="alert alert-info mb-0">
 
-            Sistema sėkmingai paleista.
+            <i class="bi bi-info-circle"></i>
 
-        </p>
+            No meters configured.
+
+            <a href="{{ url_for('pages.meters') }}"
+               class="alert-link">
+
+                Add your first meter
+
+            </a>
+
+        </div>
+
+        {% else %}
+
+        <table class="table table-hover align-middle mb-0">
+
+            <thead>
+
+                <tr>
+
+                    <th>Name</th>
+                    <th>Driver</th>
+                    <th>Protocol</th>
+                    <th>Status</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+            {% for device in current_app.application.device_manager.all() %}
+
+                <tr>
+
+                    <td>{{ device.name }}</td>
+
+                    <td>{{ device.driver|upper }}</td>
+
+                    <td>{{ device.protocol.name }}</td>
+
+                    <td>
+
+                        {% if device.connected %}
+
+                            <span class="badge bg-success">
+
+                                Online
+
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge bg-danger">
+
+                                Offline
+
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+        {% endif %}
 
     </div>
 
