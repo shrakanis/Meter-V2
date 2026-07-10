@@ -98,6 +98,15 @@ class Measurements:
         Reset all measurements.
         """
 
-        self.__dict__.update(
-            Measurements().__dict__
-        )
+        self.voltage = PhaseMeasurement()
+        self.current = PhaseMeasurement()
+
+        self.active_power = PhaseMeasurement()
+        self.reactive_power = PhaseMeasurement()
+        self.apparent_power = PhaseMeasurement()
+
+        self.power_factor = PhaseMeasurement()
+
+        self.frequency = None
+
+        self.energy = Energy()

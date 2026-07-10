@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ title }}
+{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+
+    <div class="col-lg-8">
+
+        <div class="card shadow-sm">
+
+            <div class="card-header">
+
+                <h4 class="mb-0">
+
+                    {{ title }}
+
+                </h4>
+
+            </div>
+
+            <div class="card-body">
+
+                <form method="post">
+
+                    {{ form.hidden_tag() }}
+
+                    <div class="form-check mb-4">
+
+                        {{ form.enabled(class="form-check-input") }}
+
+                        {{ form.enabled.label(class="form-check-label") }}
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            {{ form.name.label(class="form-label") }}
+
+                            {{ form.name(class="form-control") }}
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            {{ form.driver.label(class="form-label") }}
+
+                            {{ form.driver(class="form-select") }}
+
+                        </div>
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        {{ form.description.label(class="form-label") }}
+
+                        {{ form.description(class="form-control") }}
+
+                    </div>
+
+                    <div class="row">
+
+                        <div class="col-md-4 mb-3">
+
+                            {{ form.protocol.label(class="form-label") }}
+
+                            {{ form.protocol(class="form-select", id="protocol") }}
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            {{ form.slave.label(class="form-label") }}
+
+                            {{ form.slave(class="form-control") }}
+
+                        </div>
+
+                        <div class="col-md-4 mb-3">
+
+                            {{ form.timeout.label(class="form-label") }}
+
+                            {{ form.timeout(class="form-control") }}
+
+                        </div>
+
+                    </div>
+
+                    <hr>
+
+                    <h5>TCP</h5>
+
+                    <div id="tcp-settings">
+
+                        <div class="row">
+
+                            <div class="col-md-8 mb-3">
+
+                                {{ form.address.label(class="form-label") }}
+
+                                {{ form.address(class="form-control") }}
+
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+
+                                {{ form.port.label(class="form-label") }}
+
+                                {{ form.port(class="form-control") }}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <h5 class="mt-3">RTU</h5>
+
+                    <div id="rtu-settings">
+
+                        <div class="mb-3">
+
+                            {{ form.serial_port.label(class="form-label") }}
+
+                            {{ form.serial_port(class="form-control") }}
+
+                        </div>
+
+                        <div class="row">
+
+                            <div class="col-md-3 mb-3">
+
+                                {{ form.baudrate.label(class="form-label") }}
+
+                                {{ form.baudrate(class="form-control") }}
+
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+
+                                {{ form.bytesize.label(class="form-label") }}
+
+                                {{ form.bytesize(class="form-control") }}
+
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+
+                                {{ form.parity.label(class="form-label") }}
+
+                                {{ form.parity(class="form-select") }}
+
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+
+                                {{ form.stopbits.label(class="form-label") }}
+
+                                {{ form.stopbits(class="form-control") }}
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <hr>
+
+                    <div class="row">
+
+                        <div class="col-md-6 mb-3">
+
+                            {{ form.ct.label(class="form-label") }}
+
+                            {{ form.ct(class="form-control") }}
+
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+
+                            {{ form.pt.label(class="form-label") }}
+
+                            {{ form.pt(class="form-control") }}
+
+                        </div>
+
+                    </div>
+
+                    <div class="mt-4 d-flex justify-content-between">
+
+                        <a
+                            href="{{ url_for('pages.meters') }}"
+                            class="btn btn-secondary">
+
+                            Cancel
+
+                        </a>
+
+                        {{ form.submit(class="btn btn-primary") }}
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+function updateProtocol() {
+
+    const protocol = document.getElementById("protocol").value;
+
+    const tcp = document.getElementById("tcp-settings");
+    const rtu = document.getElementById("rtu-settings");
+
+    if (protocol == "1") {
+
+        tcp.style.display = "";
+        rtu.style.display = "none";
+
+    } else {
+
+        tcp.style.display = "none";
+        rtu.style.display = "";
+
+    }
+
+}
+
+document
+    .getElementById("protocol")
+    .addEventListener("change", updateProtocol);
+
+updateProtocol();
+
+</script>
+
+{% endblock %}
