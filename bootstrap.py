@@ -123,8 +123,6 @@ def create_app() -> Flask:
 
     application = Application()
 
-    application.start()
-
     app.application = application
 
     # ---------------------------------------------------------
