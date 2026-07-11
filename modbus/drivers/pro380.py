@@ -13,15 +13,17 @@ class PRO380Driver(BaseDriver):
     REGISTER_TYPE = RegisterType.HOLDING
     BYTE_ORDER = ByteOrder.ABCD
 
-    REG_VOLTAGE_AVG = 0x5000
-    REG_VOLTAGE_L1 = 0x5002
-    REG_VOLTAGE_L2 = 0x5004
-    REG_VOLTAGE_L3 = 0x5006
+    BASE = 0x5000
 
-    REG_CURRENT_TOTAL = 0x500A
-    REG_CURRENT_L1 = 0x500C
-    REG_CURRENT_L2 = 0x500E
-    REG_CURRENT_L3 = 0x5010
+    REG_VOLTAGE_AVG = 0x5000 - BASE
+    REG_VOLTAGE_L1 = 0x5002 - BASE
+    REG_VOLTAGE_L2 = 0x5004 - BASE
+    REG_VOLTAGE_L3 = 0x5006 - BASE
+
+    REG_CURRENT_TOTAL = 0x500A - BASE
+    REG_CURRENT_L1 = 0x500C - BASE
+    REG_CURRENT_L2 = 0x500E - BASE
+    REG_CURRENT_L3 = 0x5010 - BASE
 
     def read(self, client, device: Device):
         block = self.read_block(client=client, device=device, address=0x5000, count=0x50)

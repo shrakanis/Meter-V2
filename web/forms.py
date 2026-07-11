@@ -50,8 +50,9 @@ class MeterForm(FlaskForm):
         "Protocol",
         coerce=int,
         choices=[
-            (Protocol.TCP.value, "TCP"),
-            (Protocol.RTU.value, "RTU"),
+            (Protocol.TCP.value, "Modbus TCP"),
+            (Protocol.RTU.value, "Modbus RTU"),
+            (Protocol.RTU_OVER_TCP.value, "RTU over TCP"),
         ],
     )
 

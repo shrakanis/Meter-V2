@@ -225,16 +225,33 @@ function updateProtocol() {
     const tcp = document.getElementById("tcp-settings");
     const rtu = document.getElementById("rtu-settings");
 
-    if (protocol == "1") {
+    switch (protocol) {
 
-        tcp.style.display = "";
-        rtu.style.display = "none";
+        // Modbus TCP
+        case "1":
 
-    } else {
+            tcp.style.display = "";
+            rtu.style.display = "none";
+            break;
 
-        tcp.style.display = "none";
-        rtu.style.display = "";
+        // Modbus RTU
+        case "2":
 
+            tcp.style.display = "none";
+            rtu.style.display = "";
+            break;
+
+        // RTU over TCP
+        case "3":
+
+            tcp.style.display = "";
+            rtu.style.display = "none";
+            break;
+
+        default:
+
+            tcp.style.display = "";
+            rtu.style.display = "none";
     }
 
 }
