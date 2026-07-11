@@ -1,235 +1,111 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}
+Dashboard
+{% endblock %}
+
+{% block page_title %}
+Dashboard
+{% endblock %}
 
 {% block content %}
 
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-    <div>
-        <h2 class="mb-1">
-            <i class="bi bi-speedometer2"></i>
-            Dashboard
-        </h2>
-        <div class="text-muted small">
-            Duomenys atnaujinami automatiškai kas 2 sekundes
+<div class="summary-bar">
+
+    <div class="summary-card">
+        <div class="summary-title">
+            Online
+        </div>
+
+        <div
+            id="summary-online"
+            class="summary-value text-success">
+
+            {{ online }}
+
         </div>
     </div>
 
-    <div class="small text-muted">
-        Paskutinis atnaujinimas:
-        <strong id="dashboard-updated">–</strong>
+    <div class="summary-card">
+
+        <div class="summary-title">
+            Offline
+        </div>
+
+        <div
+            id="summary-offline"
+            class="summary-value text-danger">
+
+            {{ offline }}
+
+        </div>
+
     </div>
+
+    <div class="summary-card">
+
+        <div class="summary-title">
+            Total meters
+        </div>
+
+        <div
+            id="summary-total"
+            class="summary-value">
+
+            {{ total }}
+
+        </div>
+
+    </div>
+
 </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-body">
-                <div class="text-muted">Sukonfigūruota skaitiklių</div>
-                <div class="display-6 fw-semibold" id="summary-total">{{ total }}</div>
-            </div>
 
-        </div>
-        
-    </div>
+<div
+    id="meter-tabs"
+    class="meter-tabs">
 
-    <div class="col-md-4">
-        <div class="card shadow-sm border-success h-100">
-            <div class="card-body">
-                <div class="text-success">Prisijungę</div>
-                <div class="display-6 fw-semibold text-success" id="summary-online">{{ online }}</div>
-            </div>
-
-        </div>
-
-    </div>
-
-    <div class="col-md-4">
-        <div class="card shadow-sm border-danger h-100">
-            <div class="card-body">
-                <div class="text-danger">Neprisijungę</div>
-                <div class="display-6 fw-semibold text-danger" id="summary-offline">{{ offline }}</div>
-            </div>
-            
-        </div>
-    </div>
 </div>
 
-<div id="dashboard-empty" class="alert alert-info {% if total != 0 %}d-none{% endif %}">
-    <i class="bi bi-info-circle"></i>
-    Nėra sukonfigūruotų skaitiklių.
-    <a href="{{ url_for('pages.meters') }}" class="alert-link">Pridėti skaitiklį</a>
+
+<div
+    id="device">
+
+    {% if devices|length == 0 %}
+
+        <div class="alert alert-warning">
+
+            No meters configured.
+
+        </div>
+
+    {% else %}
+
+        <div class="alert alert-info">
+
+            Loading meter...
+
+        </div>
+
+    {% endif %}
+
 </div>
 
-<div id="meter-cards" class="row g-4"></div>
 
-<script>
-(() => {
-    const apiUrl = {{ url_for('pages.dashboard_api')|tojson }};
-    const cardsElement = document.getElementById('meter-cards');
-    const emptyElement = document.getElementById('dashboard-empty');
+<div class="chart-card mt-4">
 
-    const escapeHtml = (value) => String(value ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
+    <h5>
+        Live Graph
+    </h5>
 
-    const formatNumber = (value, digits = 2) => {
-        if (value === null || value === undefined || Number.isNaN(Number(value))) {
-            return '–';
-        }
+    <div
+        id="chart-placeholder"
+        class="text-muted">
 
-        return Number(value).toLocaleString('lt-LT', {
-            minimumFractionDigits: digits,
-            maximumFractionDigits: digits,
-        });
-    };
+        Chart.js will be added in next step.
 
-    const measurement = (label, value, unit, digits = 2) => `
-        <div class="d-flex justify-content-between border-bottom py-2 gap-3">
-            <span class="text-muted">${escapeHtml(label)}</span>
-            <strong class="text-nowrap">${formatNumber(value, digits)} ${escapeHtml(unit)}</strong>
-        </div>
-    `;
+    </div>
 
-    const phaseRow = (label, values, unit, digits = 2) => `
-        <tr>
-            <th scope="row">${escapeHtml(label)}</th>
-            <td>${formatNumber(values?.l1, digits)}</td>
-            <td>${formatNumber(values?.l2, digits)}</td>
-            <td>${formatNumber(values?.l3, digits)}</td>
-            <td>${escapeHtml(unit)}</td>
-        </tr>
-    `;
-
-    const renderDevice = (device) => {
-        const statusClass = device.connected ? 'success' : 'danger';
-        const statusText = device.connected ? 'Online' : 'Offline';
-        const lastUpdate = device.last_update
-            ? new Date(device.last_update).toLocaleString('lt-LT')
-            : '–';
-
-        return `
-            <div class="col-12">
-                <div class="card shadow-sm border-${statusClass}">
-                    <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-                        <div>
-                            <h5 class="mb-0">${escapeHtml(device.name)}</h5>
-                            <div class="small text-muted">
-                                ${escapeHtml(String(device.driver).toUpperCase())}
-                                · ${escapeHtml(device.protocol)}
-                                · ID ${escapeHtml(device.id)}
-                            </div>
-                        </div>
-
-                        <span class="badge bg-${statusClass} fs-6">${statusText}</span>
-                    </div>
-
-                    <div class="card-body">
-                        ${device.connected ? `
-                            <div class="row g-4">
-                                <div class="col-xl-4 col-lg-6">
-                                    <h6 class="text-uppercase text-muted mb-2">Pagrindiniai duomenys</h6>
-                                    ${measurement('Aktyvioji galia', device.active_power?.total, 'kW', 3)}
-                                    ${measurement('Reaktyvioji galia', device.reactive_power?.total, 'kvar', 3)}
-                                    ${measurement('Pilnutinė galia', device.apparent_power?.total, 'kVA', 3)}
-                                    ${measurement('Galios koeficientas', device.power_factor?.total, '', 3)}
-                                    ${measurement('Dažnis', device.frequency, 'Hz', 2)}
-                                </div>
-
-                                <div class="col-xl-4 col-lg-6">
-                                    <h6 class="text-uppercase text-muted mb-2">Energija</h6>
-                                    ${measurement('Importuota aktyvioji', device.energy?.import_active, 'kWh', 3)}
-                                    ${measurement('Eksportuota aktyvioji', device.energy?.export_active, 'kWh', 3)}
-                                    ${measurement('Importuota reaktyvioji', device.energy?.import_reactive, 'kvarh', 3)}
-                                    ${measurement('Eksportuota reaktyvioji', device.energy?.export_reactive, 'kvarh', 3)}
-                                </div>
-
-                                <div class="col-xl-4 col-lg-12">
-                                    <h6 class="text-uppercase text-muted mb-2">Ryšys</h6>
-                                    ${measurement('Atsako laikas', device.response_time_ms, 'ms', 1)}
-                                    <div class="d-flex justify-content-between border-bottom py-2 gap-3">
-                                        <span class="text-muted">Atnaujinta</span>
-                                        <strong class="text-end">${escapeHtml(lastUpdate)}</strong>
-                                    </div>
-                                    ${device.info?.serial ? `
-                                        <div class="d-flex justify-content-between border-bottom py-2 gap-3">
-                                            <span class="text-muted">Serijos numeris</span>
-                                            <strong>${escapeHtml(device.info.serial)}</strong>
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            </div>
-
-                            <hr class="my-4">
-
-                            <div class="table-responsive">
-                                <table class="table table-sm table-striped align-middle mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>Matavimas</th>
-                                            <th>L1</th>
-                                            <th>L2</th>
-                                            <th>L3</th>
-                                            <th>Vnt.</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        ${phaseRow('Įtampa', device.voltage, 'V', 1)}
-                                        ${phaseRow('Srovė', device.current, 'A', 2)}
-                                        ${phaseRow('Aktyvioji galia', device.active_power, 'kW', 3)}
-                                        ${phaseRow('Reaktyvioji galia', device.reactive_power, 'kvar', 3)}
-                                        ${phaseRow('Pilnutinė galia', device.apparent_power, 'kVA', 3)}
-                                        ${phaseRow('Galios koeficientas', device.power_factor, '', 3)}
-                                    </tbody>
-                                </table>
-                            </div>
-                        ` : `
-                            <div class="alert alert-danger mb-0">
-                                <strong>Skaitiklis nepasiekiamas.</strong>
-                                ${device.last_error ? `<div class="mt-1">${escapeHtml(device.last_error)}</div>` : ''}
-                            </div>
-                        `}
-                    </div>
-                </div>
-            </div>
-        `;
-    };
-
-    const updateDashboard = async () => {
-        try {
-            const response = await fetch(apiUrl, {
-                cache: 'no-store',
-                headers: {
-                    'Accept': 'application/json',
-                },
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            document.getElementById('summary-total').textContent = data.total;
-            document.getElementById('summary-online').textContent = data.online;
-            document.getElementById('summary-offline').textContent = data.offline;
-            document.getElementById('dashboard-updated').textContent =
-                new Date().toLocaleTimeString('lt-LT');
-
-            emptyElement.classList.toggle('d-none', data.total !== 0);
-            cardsElement.innerHTML = data.devices.map(renderDevice).join('');
-        } catch (error) {
-            document.getElementById('dashboard-updated').textContent = 'klaida';
-            console.error('Dashboard update failed:', error);
-        }
-    };
-
-    updateDashboard();
-    window.setInterval(updateDashboard, 2000);
-})();
-</script>
+</div>
 
 {% endblock %}
