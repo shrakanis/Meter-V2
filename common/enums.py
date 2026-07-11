@@ -2,10 +2,9 @@ from enum import Enum, IntEnum
 
 
 class Protocol(IntEnum):
-    """Communication protocol."""
-
     TCP = 1
     RTU = 2
+    RTU_OVER_TCP = 3
 
 
 class ByteOrder(Enum):

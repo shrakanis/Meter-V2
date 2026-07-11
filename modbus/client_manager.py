@@ -17,6 +17,8 @@ from modbus.clients.base import BaseClient
 from modbus.clients.rtu import RTUClient
 from modbus.clients.tcp import TCPClient
 
+from modbus.clients.rtu_tcp import RTUOverTCPClient
+
 
 class ClientManager:
     """Caches TCP/RTU clients shared by multiple meters."""
@@ -35,6 +37,7 @@ class ClientManager:
         )
 
     def _create(self, meter: Meter) -> BaseClient:
+
         if meter.protocol == Protocol.TCP:
             return TCPClient(
                 host=meter.address,
@@ -42,14 +45,24 @@ class ClientManager:
                 timeout=meter.timeout,
             )
 
-        return RTUClient(
-            port=meter.serial_port,
-            baudrate=meter.baudrate,
-            bytesize=meter.bytesize,
-            parity=meter.parity,
-            stopbits=meter.stopbits,
-            timeout=meter.timeout,
-        )
+        elif meter.protocol == Protocol.RTU:
+            return RTUClient(
+                port=meter.serial_port,
+                baudrate=meter.baudrate,
+                bytesize=meter.bytesize,
+                parity=meter.parity,
+                stopbits=meter.stopbits,
+                timeout=meter.timeout,
+            )
+
+        elif meter.protocol == Protocol.RTU_OVER_TCP:
+            return RTUOverTCPClient(
+                host=meter.address,
+                port=meter.port,
+                timeout=meter.timeout,
+            )
+
+        raise ValueError(f"Unsupported protocol: {meter.protocol}")
 
     def get_client(self, meter: Meter) -> BaseClient:
         key = self._key(meter)
