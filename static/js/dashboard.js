@@ -6,7 +6,7 @@ let selectedDeviceId = null;
 async function refreshDashboard() {
     try {
 
-        const response = await fetch("/api/dashboard");
+        const response = await fetch(dashboardApiUrl);
         const data = await response.json();
 
         devices = data.devices || [];

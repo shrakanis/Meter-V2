@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-Dashboard
+Dashboard - Energy Monitor V2
 {% endblock %}
 
 {% block page_title %}
@@ -19,43 +19,36 @@ Dashboard
 
         <div
             id="summary-online"
-            class="summary-value text-success">
-
+            class="summary-value text-success"
+        >
             {{ online }}
-
         </div>
     </div>
 
     <div class="summary-card">
-
         <div class="summary-title">
             Offline
         </div>
 
         <div
             id="summary-offline"
-            class="summary-value text-danger">
-
+            class="summary-value text-danger"
+        >
             {{ offline }}
-
         </div>
-
     </div>
 
     <div class="summary-card">
-
         <div class="summary-title">
             Total meters
         </div>
 
         <div
             id="summary-total"
-            class="summary-value">
-
+            class="summary-value"
+        >
             {{ total }}
-
         </div>
-
     </div>
 
 </div>
@@ -63,28 +56,22 @@ Dashboard
 
 <div
     id="meter-tabs"
-    class="meter-tabs">
+    class="meter-tabs"
+></div>
 
-</div>
 
-
-<div
-    id="device">
+<div id="device">
 
     {% if devices|length == 0 %}
 
         <div class="alert alert-warning">
-
             No meters configured.
-
         </div>
 
     {% else %}
 
         <div class="alert alert-info">
-
             Loading meter...
-
         </div>
 
     {% endif %}
@@ -100,12 +87,26 @@ Dashboard
 
     <div
         id="chart-placeholder"
-        class="text-muted">
-
+        class="text-muted"
+    >
         Chart.js will be added in next step.
-
     </div>
 
 </div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script>
+    const dashboardApiUrl =
+        "{{ url_for('pages.dashboard_api') }}";
+</script>
+
+<script src="{{ url_for(
+    'static',
+    filename='js/dashboard.js'
+) }}"></script>
 
 {% endblock %}
