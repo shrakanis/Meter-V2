@@ -10,9 +10,10 @@ from __future__ import annotations
 
 import logging
 import socket
+import threading
 
 from modbus.clients.base import BaseClient
-from modbus.exceptions import ConnectionError, RegisterError
+from modbus.exceptions import ConnectionError, TimeoutError
 from modbus.register_block import RegisterBlock
 from modbus.rtu_codec import (
     build_read_holding,
@@ -27,9 +28,11 @@ logger = logging.getLogger(__name__)
 
 class RTUOverTCPClient(BaseClient):
     """
-    Modbus RTU over TCP.
+    Modbus RTU over TCP client.
 
-    Uses raw TCP socket and RTU frames.
+    Uses a raw TCP socket and sends Modbus RTU frames unchanged.
+    Automatically disconnects a broken socket so that the next
+    polling attempt creates a new connection.
     """
 
     def __init__(
@@ -44,43 +47,96 @@ class RTUOverTCPClient(BaseClient):
         self.timeout = timeout
 
         self._socket: socket.socket | None = None
+        self._lock = threading.RLock()
 
     # ---------------------------------------------------------
     # Connection
     # ---------------------------------------------------------
 
     def connect(self) -> None:
+        """
+        Open TCP connection if it is not already connected.
+        """
 
-        if self.connected():
-            return
+        with self._lock:
 
-        try:
-
-            self._socket = socket.create_connection(
-                (self.host, self.port),
-                timeout=self.timeout,
-            )
-
-        except OSError as ex:
-
-            raise ConnectionError(
-                f"Cannot connect to {self.host}:{self.port}"
-            ) from ex
-
-    def disconnect(self) -> None:
-
-        if self._socket is not None:
+            if self._socket is not None:
+                return
 
             try:
-                self._socket.close()
-            except Exception:
+
+                sock = socket.create_connection(
+                    (self.host, self.port),
+                    timeout=self.timeout,
+                )
+
+                sock.settimeout(self.timeout)
+
+                self._socket = sock
+
+                logger.info(
+                    "Connected to RTU over TCP gateway %s:%s",
+                    self.host,
+                    self.port,
+                )
+
+            except socket.timeout as ex:
+
+                self._socket = None
+
+                raise TimeoutError(
+                    f"Connection timeout to "
+                    f"{self.host}:{self.port}"
+                ) from ex
+
+            except OSError as ex:
+
+                self._socket = None
+
+                raise ConnectionError(
+                    f"Cannot connect to "
+                    f"{self.host}:{self.port}"
+                ) from ex
+
+    def disconnect(self) -> None:
+        """
+        Close TCP connection.
+        """
+
+        with self._lock:
+
+            sock = self._socket
+            self._socket = None
+
+            if sock is None:
+                return
+
+            try:
+                sock.shutdown(socket.SHUT_RDWR)
+            except OSError:
                 pass
 
-        self._socket = None
+            try:
+                sock.close()
+            except OSError:
+                pass
+
+            logger.debug(
+                "Disconnected RTU over TCP gateway %s:%s",
+                self.host,
+                self.port,
+            )
 
     def connected(self) -> bool:
+        """
+        Return whether a socket object currently exists.
 
-        return self._socket is not None
+        A TCP connection cannot be reliably checked without performing
+        I/O. Broken sockets are cleared automatically inside _exchange().
+        """
+
+        with self._lock:
+            return self._socket is not None
 
     # ---------------------------------------------------------
     # Receive helpers
@@ -90,19 +146,49 @@ class RTUOverTCPClient(BaseClient):
         self,
         size: int,
     ) -> bytes:
+        """
+        Receive exactly the requested number of bytes.
+        """
+
+        if size <= 0:
+            return b""
 
         data = bytearray()
 
         while len(data) < size:
 
-            chunk = self._socket.recv(
-                size - len(data)
-            )
+            sock = self._socket
+
+            if sock is None:
+                raise ConnectionError(
+                    "TCP socket is not connected."
+                )
+
+            try:
+
+                chunk = sock.recv(
+                    size - len(data)
+                )
+
+            except socket.timeout as ex:
+
+                raise TimeoutError(
+                    f"Response timeout from "
+                    f"{self.host}:{self.port}"
+                ) from ex
+
+            except OSError as ex:
+
+                raise ConnectionError(
+                    f"Receive failed from "
+                    f"{self.host}:{self.port}: {ex}"
+                ) from ex
 
             if not chunk:
 
                 raise ConnectionError(
-                    "Connection closed."
+                    f"Connection closed by "
+                    f"{self.host}:{self.port}"
                 )
 
             data.extend(chunk)
@@ -110,30 +196,30 @@ class RTUOverTCPClient(BaseClient):
         return bytes(data)
 
     def _recv_frame(self) -> bytes:
+        """
+        Receive one Modbus RTU response frame.
+        """
 
-        #
-        # Slave + Function + ByteCount
-        #
+        # Slave + function + byte count or exception code
         header = self._recv_exact(3)
 
         function = header[1]
 
-        #
-        # Exception response
-        #
+        # Modbus exception response:
+        # slave + function|0x80 + exception code + CRC16
         if function & 0x80:
 
-            tail = self._recv_exact(2 + 2)
+            crc = self._recv_exact(2)
 
-            return header + tail
+            return header + crc
 
         byte_count = header[2]
 
-        tail = self._recv_exact(
+        payload_and_crc = self._recv_exact(
             byte_count + 2
         )
 
-        return header + tail
+        return header + payload_and_crc
 
     # ---------------------------------------------------------
     # Exchange
@@ -143,24 +229,73 @@ class RTUOverTCPClient(BaseClient):
         self,
         frame: bytes,
     ) -> bytes:
+        """
+        Send one RTU frame and receive one response.
 
-        self.connect()
+        Any socket or timeout error closes the current connection.
+        The next polling cycle will then create a new socket.
+        """
 
-        logger.debug(
-            "TX -> %s",
-            frame.hex(" ").upper(),
-        )
+        with self._lock:
 
-        self._socket.sendall(frame)
+            try:
 
-        response = self._recv_frame()
+                self.connect()
 
-        logger.debug(
-            "RX <- %s",
-            response.hex(" ").upper(),
-        )
+                sock = self._socket
 
-        return response
+                if sock is None:
+                    raise ConnectionError(
+                        "TCP socket is not connected."
+                    )
+
+                logger.debug(
+                    "TX %s:%s -> %s",
+                    self.host,
+                    self.port,
+                    frame.hex(" ").upper(),
+                )
+
+                sock.sendall(frame)
+
+                response = self._recv_frame()
+
+                logger.debug(
+                    "RX %s:%s <- %s",
+                    self.host,
+                    self.port,
+                    response.hex(" ").upper(),
+                )
+
+                return response
+
+            except (ConnectionError, TimeoutError):
+
+                self.disconnect()
+                raise
+
+            except socket.timeout as ex:
+
+                self.disconnect()
+
+                raise TimeoutError(
+                    f"Communication timeout with "
+                    f"{self.host}:{self.port}"
+                ) from ex
+
+            except OSError as ex:
+
+                self.disconnect()
+
+                raise ConnectionError(
+                    f"Communication error with "
+                    f"{self.host}:{self.port}: {ex}"
+                ) from ex
+
+            except Exception:
+
+                self.disconnect()
+                raise
 
     # ---------------------------------------------------------
     # Read
@@ -179,9 +314,9 @@ class RTUOverTCPClient(BaseClient):
             count=count,
         )
 
-        return parse_read_response(
-            self._exchange(frame)
-        )
+        response = self._exchange(frame)
+
+        return parse_read_response(response)
 
     def read_input_registers(
         self,
@@ -196,9 +331,9 @@ class RTUOverTCPClient(BaseClient):
             count=count,
         )
 
-        return parse_read_response(
-            self._exchange(frame)
-        )
+        response = self._exchange(frame)
+
+        return parse_read_response(response)
 
     # ---------------------------------------------------------
     # Write
