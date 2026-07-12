@@ -1,115 +1,702 @@
+/*
+ * static/css/dashboard.css
+ *
+ * Energy Monitor V2
+ *
+ * Dashboard styles.
+ */
 
-/* Dashboard V2 */
 
-.summary-bar{
-    display:flex;
-    gap:16px;
-    margin-bottom:20px;
-    flex-wrap:wrap;
+/* ============================================================
+ * Summary
+ * ============================================================ */
+
+.summary-bar {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
 }
 
-.summary-card{
-    flex:1;
-    min-width:180px;
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:18px;
+.summary-card {
+    min-width: 0;
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
-.summary-title{
-    color:var(--muted);
-    font-size:.9rem;
-    margin-bottom:8px;
+.summary-title {
+    margin-bottom: 10px;
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 500;
 }
 
-.summary-value{
-    font-size:2rem;
-    font-weight:700;
+.summary-value {
+    color: var(--text);
+    font-size: 2rem;
+    font-weight: 700;
+    line-height: 1;
 }
 
-.meter-tabs{
-    display:flex;
-    gap:12px;
-    overflow-x:auto;
-    padding-bottom:10px;
-    margin-bottom:20px;
+
+/* ============================================================
+ * Meter tabs
+ * ============================================================ */
+
+.meter-tabs {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 2px 2px 12px;
+    overflow-x: auto;
+    scroll-behavior: smooth;
 }
 
-.meter-tab{
-    min-width:220px;
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:14px 18px;
-    cursor:pointer;
-    transition:.2s;
-    flex-shrink:0;
+.meter-tab {
+    display: block;
+    flex: 0 0 220px;
+    min-width: 220px;
+    padding: 15px 16px;
+    color: var(--text);
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    outline: none;
+    cursor: pointer;
+    transition:
+        border-color 0.2s ease,
+        background-color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
 }
 
-.meter-tab:hover{
-    border-color:var(--primary);
+.meter-tab:hover {
+    background: var(--surface-2);
+    border-color: #555;
+    transform: translateY(-1px);
 }
 
-.meter-tab.active{
-    border-color:var(--primary);
-    box-shadow:0 0 0 2px rgba(45,125,255,.15);
+.meter-tab.active {
+    background: rgba(45, 125, 255, 0.08);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 1px rgba(45, 125, 255, 0.25);
 }
 
-.meter-name{
-    font-weight:600;
-    margin-bottom:6px;
+.meter-tab-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
 }
 
-.meter-status{
-    font-size:.85rem;
+.meter-tab-icon {
+    color: #f4c542;
+    font-size: 1rem;
 }
 
-.measurements{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-    gap:16px;
+.meter-tab-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    font-weight: 600;
 }
 
-.measurement-card{
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:20px;
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
 }
 
-.measurement-title{
-    color:var(--muted);
-    font-size:.9rem;
-    margin-bottom:12px;
+.meter-tab-online {
+    color: var(--success);
 }
 
-.measurement-value{
-    font-size:2rem;
-    font-weight:700;
-    line-height:1;
+.meter-tab-online .status-dot {
+    background: var(--success);
+    box-shadow: 0 0 8px rgba(46, 204, 113, 0.5);
 }
 
-.measurement-unit{
-    color:var(--muted);
-    margin-top:8px;
+.meter-tab-offline {
+    color: var(--danger);
 }
 
-.chart-card{
-    margin-top:24px;
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:20px;
-    min-height:320px;
+.meter-tab-offline .status-dot {
+    background: var(--danger);
+    box-shadow: 0 0 8px rgba(231, 76, 60, 0.5);
 }
 
-@media(max-width:768px){
-    .measurement-value{
-        font-size:1.6rem;
+.meter-name {
+    overflow: hidden;
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.meter-tab-driver {
+    margin-top: 5px;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+ * Selected device
+ * ============================================================ */
+
+.selected-device {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.selected-device-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 22px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.selected-device-title {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 15px;
+}
+
+.selected-device-icon {
+    display: flex;
+    flex: 0 0 48px;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    color: #f4c542;
+    font-size: 1.5rem;
+    background: rgba(244, 197, 66, 0.1);
+    border: 1px solid rgba(244, 197, 66, 0.25);
+    border-radius: 12px;
+}
+
+.selected-device-title h2 {
+    margin: 0;
+    overflow: hidden;
+    color: var(--text);
+    font-size: 1.55rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.selected-device-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+.meta-separator {
+    color: #666;
+}
+
+.selected-device-status {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 13px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    border-radius: 999px;
+}
+
+.device-online {
+    color: var(--success);
+    background: rgba(46, 204, 113, 0.1);
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.device-offline {
+    color: var(--danger);
+    background: rgba(231, 76, 60, 0.1);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+
+/* ============================================================
+ * Error
+ * ============================================================ */
+
+.device-error {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    color: #ffb3ac;
+    background: rgba(231, 76, 60, 0.09);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    border-radius: 10px;
+    overflow-wrap: anywhere;
+}
+
+.device-error i {
+    flex: 0 0 auto;
+    margin-top: 2px;
+    color: var(--danger);
+}
+
+
+/* ============================================================
+ * Diagnostics
+ * ============================================================ */
+
+.device-diagnostics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.diagnostic-item {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+    padding: 15px 17px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.diagnostic-label {
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+.diagnostic-value {
+    overflow: hidden;
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+ * Panels
+ * ============================================================ */
+
+.dashboard-main-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.dashboard-panel {
+    min-width: 0;
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+
+.dashboard-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+}
+
+.dashboard-panel-header h3 {
+    margin: 0;
+    color: var(--text);
+    font-size: 1.05rem;
+    font-weight: 650;
+}
+
+
+/* ============================================================
+ * Phase values
+ * ============================================================ */
+
+.phase-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.phase-item {
+    min-width: 0;
+    padding: 17px 14px;
+    text-align: center;
+    background: var(--surface-2);
+    border: 1px solid transparent;
+    border-radius: 10px;
+}
+
+.phase-l1 {
+    border-top: 3px solid #f5c542;
+}
+
+.phase-l2 {
+    border-top: 3px solid #59a8ff;
+}
+
+.phase-l3 {
+    border-top: 3px solid #e56b6f;
+}
+
+.phase-name {
+    margin-bottom: 12px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.phase-value {
+    min-height: 31px;
+    overflow: hidden;
+    color: var(--text);
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+ * Shared measurement values
+ * ============================================================ */
+
+.measurement-number {
+    color: inherit;
+}
+
+.measurement-unit {
+    margin-left: 4px;
+    color: var(--muted);
+    font-size: 0.62em;
+    font-weight: 500;
+}
+
+.measurement-empty {
+    color: #666;
+}
+
+
+/* ============================================================
+ * Power
+ * ============================================================ */
+
+.power-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(150px, 1fr));
+    gap: 12px;
+}
+
+.power-card {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 13px;
+    padding: 16px;
+    background: var(--surface-2);
+    border: 1px solid transparent;
+    border-radius: 10px;
+}
+
+.power-card-icon {
+    display: flex;
+    flex: 0 0 40px;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    font-size: 1.05rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 9px;
+}
+
+.power-card-content {
+    min-width: 0;
+}
+
+.power-card-title {
+    margin-bottom: 7px;
+    overflow: hidden;
+    color: var(--muted);
+    font-size: 0.75rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.power-card-value {
+    overflow: hidden;
+    color: var(--text);
+    font-size: 1.15rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.active-power {
+    border-top: 3px solid #f39c12;
+}
+
+.active-power .power-card-icon {
+    color: #f39c12;
+}
+
+.reactive-power {
+    border-top: 3px solid #ae72ff;
+}
+
+.reactive-power .power-card-icon {
+    color: #ae72ff;
+}
+
+.apparent-power {
+    border-top: 3px solid #3ac7d3;
+}
+
+.apparent-power .power-card-icon {
+    color: #3ac7d3;
+}
+
+.power-factor {
+    border-top: 3px solid #2ecc71;
+}
+
+.power-factor .power-card-icon {
+    color: #2ecc71;
+}
+
+.frequency {
+    border-top: 3px solid #2d7dff;
+}
+
+.frequency .power-card-icon {
+    color: #2d7dff;
+}
+
+
+/* ============================================================
+ * Energy
+ * ============================================================ */
+
+.energy-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.energy-card {
+    min-width: 0;
+    padding: 17px;
+    background: var(--surface-2);
+    border-radius: 10px;
+}
+
+.energy-card-title {
+    margin-bottom: 13px;
+    color: var(--muted);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+.energy-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-width: 0;
+    gap: 15px;
+    padding: 11px 0;
+    border-top: 1px solid var(--border);
+}
+
+.energy-row:first-of-type {
+    border-top: 0;
+}
+
+.energy-label {
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.energy-value {
+    overflow: hidden;
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+ * Messages
+ * ============================================================ */
+
+.dashboard-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 260px;
+    padding: 30px;
+    color: var(--muted);
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.dashboard-message > i {
+    margin-bottom: 14px;
+    color: #666;
+    font-size: 2.5rem;
+}
+
+.dashboard-message h3 {
+    margin: 0 0 9px;
+    color: var(--text);
+    font-size: 1.15rem;
+}
+
+.dashboard-message p {
+    margin: 0;
+}
+
+.dashboard-message-error {
+    color: #ffaaa2;
+    border-color: rgba(231, 76, 60, 0.35);
+}
+
+.dashboard-message-error > i {
+    color: var(--danger);
+}
+
+
+/* ============================================================
+ * Old live-chart placeholder
+ * ============================================================ */
+
+.chart-card {
+    margin-top: 22px;
+    min-height: 180px;
+    padding: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+
+.chart-card h5 {
+    margin: 0 0 12px;
+}
+
+
+/* ============================================================
+ * Responsive
+ * ============================================================ */
+
+@media (max-width: 1200px) {
+    .power-grid {
+        grid-template-columns: repeat(3, minmax(160px, 1fr));
+    }
+}
+
+@media (max-width: 900px) {
+    .summary-bar {
+        grid-template-columns: repeat(3, minmax(130px, 1fr));
     }
 
-    .meter-tab{
-        min-width:180px;
+    .dashboard-main-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .device-diagnostics {
+        grid-template-columns: 1fr;
+    }
+
+    .power-grid {
+        grid-template-columns: repeat(2, minmax(150px, 1fr));
+    }
+}
+
+@media (max-width: 700px) {
+    .summary-bar {
+        grid-template-columns: 1fr;
+    }
+
+    .selected-device-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .selected-device-status {
+        align-self: flex-start;
+    }
+
+    .phase-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .power-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .energy-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .meter-tab {
+        flex-basis: 185px;
+        min-width: 185px;
+    }
+}
+
+@media (max-width: 450px) {
+    .selected-device-title {
+        align-items: flex-start;
+    }
+
+    .selected-device-icon {
+        flex-basis: 40px;
+        width: 40px;
+        height: 40px;
+    }
+
+    .selected-device-title h2 {
+        font-size: 1.25rem;
+    }
+
+    .dashboard-panel {
+        padding: 15px;
+    }
+
+    .energy-row {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 5px;
     }
 }

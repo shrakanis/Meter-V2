@@ -1,0 +1,396 @@
+/*
+ * static/css/device.css
+ *
+ * Energy Monitor V2
+ */
+
+:root {
+
+    --l1: #f4c542;
+    --l2: #4ea1ff;
+    --l3: #ff6666;
+
+}
+
+
+/* ==========================================================
+   Header
+========================================================== */
+
+.device-header {
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 25px;
+
+}
+
+.device-title h2 {
+
+    margin: 0;
+    font-size: 2rem;
+
+}
+
+.device-title small {
+
+    color: #999;
+
+}
+
+.device-status {
+
+    font-size: .95rem;
+    font-weight: 600;
+
+}
+
+
+/* ==========================================================
+   Diagnostics
+========================================================== */
+
+.diagnostic-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(auto-fit,minmax(180px,1fr));
+
+    gap: 15px;
+
+    margin-bottom: 25px;
+
+}
+
+.diagnostic-card {
+
+    background: var(--surface);
+
+    border: 1px solid var(--border);
+
+    border-radius: 12px;
+
+    padding: 18px;
+
+}
+
+.diagnostic-title {
+
+    color: #999;
+
+    font-size: .85rem;
+
+}
+
+.diagnostic-value {
+
+    margin-top: 10px;
+
+    font-size: 1.5rem;
+
+    font-weight: bold;
+
+}
+
+
+/* ==========================================================
+   Measurements
+========================================================== */
+
+.measurements {
+
+    background: var(--surface);
+
+    border: 1px solid var(--border);
+
+    border-radius: 14px;
+
+    padding: 25px;
+
+    margin-bottom: 25px;
+
+}
+
+.measurements-header {
+
+    display: grid;
+
+    grid-template-columns: 180px repeat(3,1fr);
+
+    margin-bottom: 20px;
+
+    font-weight: bold;
+
+    text-align: center;
+
+}
+
+.measurements-header div:first-child{
+
+    text-align:left;
+
+}
+
+.phase-l1{
+
+    color:var(--l1);
+
+}
+
+.phase-l2{
+
+    color:var(--l2);
+
+}
+
+.phase-l3{
+
+    color:var(--l3);
+
+}
+
+.measurement-row{
+
+    display:grid;
+
+    grid-template-columns:180px repeat(3,1fr);
+
+    align-items:center;
+
+    padding:14px 0;
+
+    border-top:1px solid rgba(255,255,255,.08);
+
+}
+
+.measurement-row:first-of-type{
+
+    border-top:none;
+
+}
+
+.measurement-name{
+
+    font-weight:600;
+
+}
+
+.measurement-value{
+
+    text-align:center;
+
+    font-size:1.2rem;
+
+    font-weight:700;
+
+}
+
+
+/* ==========================================================
+   Totals
+========================================================== */
+
+.total-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+
+    gap:18px;
+
+    margin-bottom:25px;
+
+}
+
+.total-card{
+
+    background:var(--surface);
+
+    border:1px solid var(--border);
+
+    border-radius:12px;
+
+    padding:25px;
+
+    text-align:center;
+
+}
+
+.total-title{
+
+    color:#999;
+
+    margin-bottom:15px;
+
+}
+
+.total-value{
+
+    font-size:2rem;
+
+    font-weight:bold;
+
+}
+
+
+/* ==========================================================
+   Energy
+========================================================== */
+
+.energy-grid{
+
+    display:grid;
+
+    grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+
+    gap:20px;
+
+    margin-bottom:25px;
+
+}
+
+.energy-card{
+
+    background:var(--surface);
+
+    border:1px solid var(--border);
+
+    border-radius:12px;
+
+    padding:25px;
+
+}
+
+.energy-title{
+
+    color:#999;
+
+    margin-bottom:20px;
+
+    font-size:.9rem;
+
+}
+
+.energy-value{
+
+    font-size:2rem;
+
+    font-weight:bold;
+
+}
+
+
+/* ==========================================================
+   Chart
+========================================================== */
+
+.chart-card{
+
+    background:var(--surface);
+
+    border:1px solid var(--border);
+
+    border-radius:12px;
+
+    padding:25px;
+
+    min-height:420px;
+
+}
+
+.chart-title{
+
+    font-size:1.1rem;
+
+    font-weight:600;
+
+    margin-bottom:20px;
+
+}
+
+.chart-placeholder{
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    height:320px;
+
+    color:#666;
+
+    border:2px dashed #444;
+
+    border-radius:10px;
+
+}
+
+
+/* ==========================================================
+   Responsive
+========================================================== */
+
+@media(max-width:900px){
+
+    .measurements-header{
+
+        grid-template-columns:120px repeat(3,1fr);
+
+    }
+
+    .measurement-row{
+
+        grid-template-columns:120px repeat(3,1fr);
+
+    }
+
+}
+
+@media(max-width:700px){
+
+    .measurements{
+
+        overflow-x:auto;
+
+    }
+
+    .measurements-header{
+
+        min-width:650px;
+
+    }
+
+    .measurement-row{
+
+        min-width:650px;
+
+    }
+
+}
+
+@media(max-width:500px){
+
+    .device-header{
+
+        flex-direction:column;
+
+        align-items:flex-start;
+
+    }
+
+    .total-value{
+
+        font-size:1.6rem;
+
+    }
+
+    .energy-value{
+
+        font-size:1.6rem;
+
+    }
+
+}

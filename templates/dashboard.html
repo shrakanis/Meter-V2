@@ -5,7 +5,72 @@ Dashboard - Energy Monitor V2
 {% endblock %}
 
 {% block page_title %}
-Dashboard
+Factory Overview
+{% endblock %}
+
+{% block head %}
+
+<style>
+    .overview-device-card {
+        cursor: pointer;
+        transition:
+            border-color 0.2s ease,
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
+    }
+
+    .overview-device-card:hover {
+        border-color: var(--primary);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 18px rgba(0, 0, 0, 0.35);
+    }
+
+    .device-overview-values {
+        margin-top: 18px;
+        padding: 8px 12px;
+        color: #111111;
+        background: #ffffff;
+        border-radius: 4px;
+    }
+
+    .device-overview-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 15px;
+        min-height: 32px;
+    }
+
+    .device-overview-label {
+        color: #999999;
+    }
+
+    .device-overview-value {
+        color: #000000;
+        font-weight: 700;
+        text-align: right;
+        white-space: nowrap;
+    }
+
+    .device-error-box {
+        margin-top: 14px;
+        padding: 11px 12px;
+        color: #ff4055;
+        font-size: 0.84rem;
+        line-height: 1.45;
+        background: rgba(231, 76, 60, 0.06);
+        border: 1px solid rgba(231, 76, 60, 0.25);
+        border-radius: 6px;
+        overflow-wrap: anywhere;
+    }
+
+    .device-error-address {
+        display: block;
+        margin-top: 5px;
+        color: #ff8b97;
+    }
+</style>
+
 {% endblock %}
 
 {% block content %}
@@ -14,6 +79,21 @@ Dashboard
 
     <div class="summary-card">
         <div class="summary-title">
+            <i class="bi bi-hdd-network me-2"></i>
+            Devices
+        </div>
+
+        <div
+            id="summary-total"
+            class="summary-value"
+        >
+            {{ total }}
+        </div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-title">
+            <i class="bi bi-check-circle-fill text-success me-2"></i>
             Online
         </div>
 
@@ -27,6 +107,7 @@ Dashboard
 
     <div class="summary-card">
         <div class="summary-title">
+            <i class="bi bi-x-circle-fill text-danger me-2"></i>
             Offline
         </div>
 
@@ -40,59 +121,298 @@ Dashboard
 
     <div class="summary-card">
         <div class="summary-title">
-            Total meters
+            <i class="bi bi-arrow-repeat me-2"></i>
+            Refresh
         </div>
 
         <div
-            id="summary-total"
             class="summary-value"
+            style="font-size: 1.4rem;"
         >
-            {{ total }}
+            1 s
         </div>
     </div>
 
 </div>
 
+
+<div class="card mb-4">
+
+    <div class="card-body">
+
+        <div class="input-group">
+
+            <span class="input-group-text">
+                <i class="bi bi-search"></i>
+            </span>
+
+            <input
+                id="device-search"
+                type="text"
+                class="form-control"
+                placeholder="Search device..."
+                autocomplete="off"
+            >
+
+        </div>
+
+    </div>
+
+</div>
+
+
+{% if devices %}
 
 <div
-    id="meter-tabs"
-    class="meter-tabs"
-></div>
+    id="device-grid"
+    class="row g-4"
+>
+
+    {% for device in devices %}
+
+    <div
+        class="col-12 col-sm-6 col-lg-4 col-xl-3 device-card-wrapper"
+        data-name="{{ device.name|lower }}"
+    >
+
+        <a
+            href="{{ url_for(
+                'pages.device_details',
+                device_id=device.id
+            ) }}"
+            class="text-decoration-none"
+        >
+
+            <div class="card h-100 overview-device-card">
+
+                <div class="card-body">
+
+                    <div class="d-flex justify-content-between align-items-start">
+
+                        <div>
+
+                            <h5 class="mb-1 text-light">
+
+                                <i class="bi bi-lightning-charge-fill text-warning"></i>
+
+                                {{ device.name }}
+
+                            </h5>
+
+                            <small class="text-muted">
+                                {{ device.driver }}
+                            </small>
+
+                        </div>
+
+                        {% if device.connected %}
+
+                            <span class="badge bg-success">
+                                Online
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge bg-danger">
+                                Offline
+                            </span>
+
+                        {% endif %}
+
+                    </div>
 
 
-<div id="device">
+                    <div class="device-overview-values">
 
-    {% if devices|length == 0 %}
+                        <div class="device-overview-row">
 
-        <div class="alert alert-warning">
-            No meters configured.
-        </div>
+                            <span class="device-overview-label">
+                                Average voltage
+                            </span>
 
-    {% else %}
+                            <span class="device-overview-value">
 
-        <div class="alert alert-info">
-            Loading meter...
-        </div>
+                                {% if device.connected
+                                    and device.measurements.voltage.average is not none %}
 
-    {% endif %}
+                                    {{ "%.1f"|format(
+                                        device.measurements.voltage.average
+                                    ) }} V
+
+                                {% else %}
+
+                                    --
+
+                                {% endif %}
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="device-overview-row">
+
+                            <span class="device-overview-label">
+                                Current
+                            </span>
+
+                            <span class="device-overview-value">
+
+                                {% if device.connected
+                                    and device.measurements.current.total is not none %}
+
+                                    {{ "%.2f"|format(
+                                        device.measurements.current.total
+                                    ) }} A
+
+                                {% else %}
+
+                                    --
+
+                                {% endif %}
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="device-overview-row">
+
+                            <span class="device-overview-label">
+                                Power
+                            </span>
+
+                            <span class="device-overview-value">
+
+                                {% if device.connected
+                                    and device.measurements.active_power.total is not none %}
+
+                                    {{ "%.2f"|format(
+                                        device.measurements.active_power.total
+                                    ) }} kW
+
+                                {% else %}
+
+                                    --
+
+                                {% endif %}
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="device-overview-row">
+
+                            <span class="device-overview-label">
+                                Energy
+                            </span>
+
+                            <span class="device-overview-value">
+
+                                {% if device.connected
+                                    and device.measurements.energy.import_active is not none %}
+
+                                    {{ "%.1f"|format(
+                                        device.measurements.energy.import_active
+                                    ) }} kWh
+
+                                {% else %}
+
+                                    --
+
+                                {% endif %}
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="device-overview-row">
+
+                            <span class="device-overview-label">
+                                Response
+                            </span>
+
+                            <span class="device-overview-value">
+
+                                {{ "%.1f"|format(
+                                    device.response_time * 1000
+                                ) }} ms
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    {% if device.last_error %}
+
+                    <div class="device-error-box">
+
+                        <div>
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                            {{ device.last_error }}
+                        </div>
+
+                        <span class="device-error-address">
+
+                            Modbus address:
+
+                            {% if device.slave is defined %}
+                                {{ device.slave }}
+                            {% else %}
+                                --
+                            {% endif %}
+
+                        </span>
+
+                    </div>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </a>
+
+    </div>
+
+    {% endfor %}
 
 </div>
 
+{% else %}
 
-<div class="chart-card mt-4">
+<div class="card">
 
-    <h5>
-        Live Graph
-    </h5>
+    <div class="card-body py-5 text-center">
 
-    <div
-        id="chart-placeholder"
-        class="text-muted"
-    >
-        Chart.js will be added in next step.
+        <i class="bi bi-hdd-network fs-1 text-muted"></i>
+
+        <h4 class="mt-3">
+            No devices configured
+        </h4>
+
+        <p class="text-muted">
+            Add your first Modbus meter.
+        </p>
+
+        <a
+            href="{{ url_for('pages.add_meter') }}"
+            class="btn btn-primary"
+        >
+            <i class="bi bi-plus-circle me-1"></i>
+            Add meter
+        </a>
+
     </div>
 
 </div>
+
+{% endif %}
 
 {% endblock %}
 
@@ -100,13 +420,45 @@ Dashboard
 {% block scripts %}
 
 <script>
-    const dashboardApiUrl =
-        "{{ url_for('pages.dashboard_api') }}";
-</script>
+"use strict";
 
-<script src="{{ url_for(
-    'static',
-    filename='js/dashboard.js'
-) }}"></script>
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+        const search = document.getElementById(
+            "device-search"
+        );
+
+        if (!search) {
+            return;
+        }
+
+        search.addEventListener(
+            "input",
+            function () {
+                const text = search.value
+                    .trim()
+                    .toLowerCase();
+
+                document
+                    .querySelectorAll(
+                        ".device-card-wrapper"
+                    )
+                    .forEach(
+                        function (card) {
+                            const name =
+                                card.dataset.name || "";
+
+                            card.style.display =
+                                name.includes(text)
+                                    ? ""
+                                    : "none";
+                        }
+                    );
+            }
+        );
+    }
+);
+</script>
 
 {% endblock %}

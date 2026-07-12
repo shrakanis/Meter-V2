@@ -1,0 +1,643 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ device.name }} - Energy Monitor V2
+{% endblock %}
+
+{% block page_title %}
+Device
+{% endblock %}
+
+{% block head %}
+
+<link
+    rel="stylesheet"
+    href="{{ url_for(
+        'static',
+        filename='css/device.css'
+    ) }}"
+>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="device-header">
+
+    <div class="device-title">
+
+        <h2>
+            <i class="bi bi-lightning-charge-fill text-warning"></i>
+            {{ device.name }}
+        </h2>
+
+        <small>
+            {{ device.driver }}
+        </small>
+
+    </div>
+
+    <div>
+
+        {% if device.connected %}
+
+            <span
+                id="device-status"
+                class="badge bg-success device-status"
+            >
+                ONLINE
+            </span>
+
+        {% else %}
+
+            <span
+                id="device-status"
+                class="badge bg-danger device-status"
+            >
+                OFFLINE
+            </span>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<div class="diagnostic-grid">
+
+    <div class="diagnostic-card">
+
+        <div class="diagnostic-title">
+            Response time
+        </div>
+
+        <div class="diagnostic-value">
+            <span id="response-time">
+                {{ "%.1f"|format(
+                    device.response_time * 1000
+                ) }}
+            </span>
+            <small>ms</small>
+        </div>
+
+    </div>
+
+    <div class="diagnostic-card">
+
+        <div class="diagnostic-title">
+            State
+        </div>
+
+        <div
+            id="device-state"
+            class="diagnostic-value"
+        >
+            {% if device.state.name is defined %}
+                {{ device.state.name }}
+            {% else %}
+                {{ device.state }}
+            {% endif %}
+        </div>
+
+    </div>
+
+    <div class="diagnostic-card">
+
+        <div class="diagnostic-title">
+            Last update
+        </div>
+
+        <div
+            id="last-update"
+            class="diagnostic-value"
+            style="font-size: 1rem;"
+        >
+            {% if device.last_update %}
+                {{ device.last_update }}
+            {% else %}
+                --
+            {% endif %}
+        </div>
+
+    </div>
+
+    <div class="diagnostic-card">
+
+        <div class="diagnostic-title">
+            Driver
+        </div>
+
+        <div class="diagnostic-value">
+            {{ device.driver }}
+        </div>
+
+    </div>
+
+</div>
+
+
+{% if device.last_error %}
+
+<div
+    id="device-error"
+    class="alert alert-danger"
+>
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+
+    <span id="device-error-text">
+        {{ device.last_error }}
+    </span>
+</div>
+
+{% else %}
+
+<div
+    id="device-error"
+    class="alert alert-danger d-none"
+>
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+
+    <span id="device-error-text"></span>
+</div>
+
+{% endif %}
+
+
+<div class="measurements">
+
+    <div class="measurements-header">
+
+        <div>
+            Measurement
+        </div>
+
+        <div class="phase-l1">
+            L1
+        </div>
+
+        <div class="phase-l2">
+            L2
+        </div>
+
+        <div class="phase-l3">
+            L3
+        </div>
+
+    </div>
+
+
+    <div class="measurement-row">
+
+        <div class="measurement-name">
+            Voltage
+        </div>
+
+        <div class="measurement-value">
+            <span id="voltage-l1">
+                {% if device.measurements.voltage.l1 is not none %}
+                    {{ "%.1f"|format(
+                        device.measurements.voltage.l1
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+            <small>V</small>
+        </div>
+
+        <div class="measurement-value">
+            <span id="voltage-l2">
+                {% if device.measurements.voltage.l2 is not none %}
+                    {{ "%.1f"|format(
+                        device.measurements.voltage.l2
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+            <small>V</small>
+        </div>
+
+        <div class="measurement-value">
+            <span id="voltage-l3">
+                {% if device.measurements.voltage.l3 is not none %}
+                    {{ "%.1f"|format(
+                        device.measurements.voltage.l3
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+            <small>V</small>
+        </div>
+
+    </div>
+
+
+    <div class="measurement-row">
+
+        <div class="measurement-name">
+            Current
+        </div>
+
+        <div class="measurement-value">
+            <span id="current-l1">
+                {% if device.measurements.current.l1 is not none %}
+                    {{ "%.2f"|format(
+                        device.measurements.current.l1
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+            <small>A</small>
+        </div>
+
+        <div class="measurement-value">
+            <span id="current-l2">
+                {% if device.measurements.current.l2 is not none %}
+                    {{ "%.2f"|format(
+                        device.measurements.current.l2
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+            <small>A</small>
+        </div>
+
+        <div class="measurement-value">
+            <span id="current-l3">
+                {% if device.measurements.current.l3 is not none %}
+                    {{ "%.2f"|format(
+                        device.measurements.current.l3
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+            <small>A</small>
+        </div>
+
+    </div>
+
+
+    <div class="measurement-row">
+
+        <div class="measurement-name">
+            Active power
+        </div>
+
+        <div class="measurement-value">
+            <span id="active-l1">
+                {% if device.measurements.active_power.l1 is not none %}
+                    {{ "%.2f"|format(
+                        device.measurements.active_power.l1
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+            <small>kW</small>
+        </div>
+
+        <div class="measurement-value">
+            <span id="active-l2">
+                {% if device.measurements.active_power.l2 is not none %}
+                    {{ "%.2f"|format(
+                        device.measurements.active_power.l2
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+            <small>kW</small>
+        </div>
+
+        <div class="measurement-value">
+            <span id="active-l3">
+                {% if device.measurements.active_power.l3 is not none %}
+                    {{ "%.2f"|format(
+                        device.measurements.active_power.l3
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+            <small>kW</small>
+        </div>
+
+    </div>
+
+
+    <div class="measurement-row">
+
+        <div class="measurement-name">
+            Reactive power
+        </div>
+
+        <div class="measurement-value">
+            <span id="reactive-l1">
+                {% if device.measurements.reactive_power.l1 is not none %}
+                    {{ "%.2f"|format(
+                        device.measurements.reactive_power.l1
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+            <small>kvar</small>
+        </div>
+
+        <div class="measurement-value">
+            <span id="reactive-l2">
+                {% if device.measurements.reactive_power.l2 is not none %}
+                    {{ "%.2f"|format(
+                        device.measurements.reactive_power.l2
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+            <small>kvar</small>
+        </div>
+
+        <div class="measurement-value">
+            <span id="reactive-l3">
+                {% if device.measurements.reactive_power.l3 is not none %}
+                    {{ "%.2f"|format(
+                        device.measurements.reactive_power.l3
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+            <small>kvar</small>
+        </div>
+
+    </div>
+
+
+    <div class="measurement-row">
+
+        <div class="measurement-name">
+            Power factor
+        </div>
+
+        <div class="measurement-value">
+            <span id="pf-l1">
+                {% if device.measurements.power_factor.l1 is not none %}
+                    {{ "%.3f"|format(
+                        device.measurements.power_factor.l1
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+        </div>
+
+        <div class="measurement-value">
+            <span id="pf-l2">
+                {% if device.measurements.power_factor.l2 is not none %}
+                    {{ "%.3f"|format(
+                        device.measurements.power_factor.l2
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+        </div>
+
+        <div class="measurement-value">
+            <span id="pf-l3">
+                {% if device.measurements.power_factor.l3 is not none %}
+                    {{ "%.3f"|format(
+                        device.measurements.power_factor.l3
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="total-grid">
+
+    <div class="total-card">
+
+        <div class="total-title">
+            Active power
+        </div>
+
+        <div class="total-value">
+            <span id="total-active">
+                {% if device.measurements.active_power.total is not none %}
+                    {{ "%.2f"|format(
+                        device.measurements.active_power.total
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+            <small>kW</small>
+        </div>
+
+    </div>
+
+    <div class="total-card">
+
+        <div class="total-title">
+            Reactive power
+        </div>
+
+        <div class="total-value">
+            <span id="total-reactive">
+                {% if device.measurements.reactive_power.total is not none %}
+                    {{ "%.2f"|format(
+                        device.measurements.reactive_power.total
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+            <small>kvar</small>
+        </div>
+
+    </div>
+
+    <div class="total-card">
+
+        <div class="total-title">
+            Frequency
+        </div>
+
+        <div class="total-value">
+            <span id="frequency">
+                {% if device.measurements.frequency is not none %}
+                    {{ "%.2f"|format(
+                        device.measurements.frequency
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+            <small>Hz</small>
+        </div>
+
+    </div>
+
+    <div class="total-card">
+
+        <div class="total-title">
+            Power factor
+        </div>
+
+        <div class="total-value">
+            <span id="pf-total">
+                {% if device.measurements.power_factor.total is not none %}
+                    {{ "%.3f"|format(
+                        device.measurements.power_factor.total
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="energy-grid">
+
+    <div class="energy-card">
+
+        <div class="energy-title">
+            Import active energy
+        </div>
+
+        <div class="energy-value">
+            <span id="energy-import">
+                {% if device.measurements.energy.import_active is not none %}
+                    {{ "%.2f"|format(
+                        device.measurements.energy.import_active
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+            <small>kWh</small>
+        </div>
+
+    </div>
+
+    <div class="energy-card">
+
+        <div class="energy-title">
+            Export active energy
+        </div>
+
+        <div class="energy-value">
+            <span id="energy-export">
+                {% if device.measurements.energy.export_active is not none %}
+                    {{ "%.2f"|format(
+                        device.measurements.energy.export_active
+                    ) }}
+                {% else %}
+                    --
+                {% endif %}
+            </span>
+            <small>kWh</small>
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="chart-card">
+
+    <div
+        class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3"
+    >
+
+        <div class="chart-title mb-0">
+            Live chart
+        </div>
+
+        <div
+            class="btn-group"
+            role="group"
+            aria-label="Chart measurement"
+        >
+
+            <button
+                type="button"
+                class="btn btn-sm btn-primary"
+                data-chart-type="voltage"
+            >
+                Voltage
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                data-chart-type="current"
+            >
+                Current
+            </button>
+
+            <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                data-chart-type="power"
+            >
+                Power
+            </button>
+
+        </div>
+
+    </div>
+
+    <div style="position: relative; height: 360px;">
+
+        <canvas id="live-device-chart"></canvas>
+
+    </div>
+
+    <div class="text-muted small mt-3">
+        Live data, last 5 minutes
+    </div>
+
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+
+<script>
+    const deviceApiUrl =
+        {{ url_for(
+            'pages.device_api',
+            device_id=device.id
+        ) | tojson }};
+</script>
+
+<script
+    src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"
+></script>
+
+<script
+    src="{{ url_for(
+        'static',
+        filename='js/device.js'
+    ) }}"
+></script>
+
+{% endblock %}
