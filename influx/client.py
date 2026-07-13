@@ -28,11 +28,10 @@ class InfluxClient:
 
     Responsibilities
     ----------------
-
-    - Connect to InfluxDB
-    - Write measurements
-    - Query history (later)
-    - Health check
+    * Connect to InfluxDB
+    * Write measurement points
+    * Provide access to the query client
+    * Check server health
     """
 
     def __init__(
@@ -54,7 +53,7 @@ class InfluxClient:
         self._client: InfluxDBClient | None = None
         self._write_api = None
 
-        if enabled:
+        if self._enabled:
             self.connect()
 
     # ---------------------------------------------------------
@@ -63,24 +62,56 @@ class InfluxClient:
 
     @property
     def enabled(self) -> bool:
+        """Return whether InfluxDB support is enabled."""
+
         return self._enabled
 
     @property
+    def url(self) -> str:
+        """Return InfluxDB URL."""
+
+        return self._url
+
+    @property
     def bucket(self) -> str:
+        """Return configured bucket."""
+
         return self._bucket
 
     @property
     def org(self) -> str:
+        """Return configured organisation."""
+
         return self._org
+
+    @property
+    def client(self) -> InfluxDBClient | None:
+        """
+        Return the underlying InfluxDB client.
+
+        Used by HistoryReader for Flux queries.
+        """
+
+        return self._client
 
     # ---------------------------------------------------------
     # Connection
     # ---------------------------------------------------------
 
-    def connect(self) -> None:
+    def connect(self) -> bool:
         """
         Connect to InfluxDB.
+
+        Returns
+        -------
+        bool
+            True if the client was created successfully.
         """
+
+        if not self._enabled:
+            return False
+
+        self.close()
 
         try:
 
@@ -88,6 +119,7 @@ class InfluxClient:
                 url=self._url,
                 token=self._token,
                 org=self._org,
+                timeout=10_000,
             )
 
             self._write_api = self._client.write_api(
@@ -95,18 +127,24 @@ class InfluxClient:
             )
 
             logger.info(
-                "Connected to InfluxDB (%s)",
+                "InfluxDB client initialized: %s, org=%s, bucket=%s",
                 self._url,
+                self._org,
+                self._bucket,
             )
+
+            return True
 
         except Exception:
 
             logger.exception(
-                "Cannot connect to InfluxDB",
+                "Cannot initialize InfluxDB client."
             )
 
             self._client = None
             self._write_api = None
+
+            return False
 
     # ---------------------------------------------------------
     # Status
@@ -114,13 +152,37 @@ class InfluxClient:
 
     def connected(self) -> bool:
         """
-        Return True if connected.
+        Return whether the local client is initialized.
+
+        This does not perform a network request.
         """
 
         return (
-            self._client is not None
+            self._enabled
+            and self._client is not None
             and self._write_api is not None
         )
+
+    def ping(self) -> bool:
+        """
+        Check whether the InfluxDB server is reachable.
+        """
+
+        if not self._enabled:
+            return False
+
+        if self._client is None:
+            return False
+
+        try:
+
+            return bool(
+                self._client.ping()
+            )
+
+        except Exception:
+
+            return False
 
     # ---------------------------------------------------------
     # Close
@@ -128,20 +190,34 @@ class InfluxClient:
 
     def close(self) -> None:
         """
-        Close client.
+        Close the InfluxDB client.
         """
 
-        if self._client is None:
-            return
+        write_api = self._write_api
+        client = self._client
 
-        try:
+        self._write_api = None
+        self._client = None
 
-            self._client.close()
+        if write_api is not None:
 
-        finally:
+            try:
+                write_api.close()
+            except Exception:
+                logger.debug(
+                    "InfluxDB write API close failed.",
+                    exc_info=True,
+                )
 
-            self._client = None
-            self._write_api = None
+        if client is not None:
+
+            try:
+                client.close()
+            except Exception:
+                logger.debug(
+                    "InfluxDB client close failed.",
+                    exc_info=True,
+                )
 
     # ---------------------------------------------------------
     # Write
@@ -152,15 +228,18 @@ class InfluxClient:
         point: Point,
     ) -> bool:
         """
-        Write one point.
+        Write one point to InfluxDB.
 
-        Returns
-        -------
-        bool
-            True if successful.
+        Recorder errors do not propagate to DeviceManager.
         """
 
+        if not self._enabled:
+            return False
+
         if not self.connected():
+            self.connect()
+
+        if self._write_api is None:
             return False
 
         try:
@@ -177,28 +256,8 @@ class InfluxClient:
         except Exception:
 
             logger.exception(
-                "InfluxDB write failed",
+                "InfluxDB write failed."
             )
-
-            return False
-
-    # ---------------------------------------------------------
-    # Health
-    # ---------------------------------------------------------
-
-    def ping(self) -> bool:
-        """
-        Ping server.
-        """
-
-        if self._client is None:
-            return False
-
-        try:
-
-            return self._client.ping()
-
-        except Exception:
 
             return False
 
@@ -213,16 +272,19 @@ class InfluxClient:
         fields: dict[str, Any] | None = None,
     ) -> Point:
         """
-        Create Point().
+        Create an InfluxDB Point.
         """
 
         point = Point(
-            measurement,
+            measurement
         )
 
         if tags:
 
             for key, value in tags.items():
+
+                if value is None:
+                    continue
 
                 point.tag(
                     key,
@@ -235,6 +297,9 @@ class InfluxClient:
 
                 if value is None:
                     continue
+
+                if isinstance(value, bool):
+                    value = int(value)
 
                 point.field(
                     key,
