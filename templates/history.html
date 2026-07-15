@@ -1,0 +1,526 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ device.name }} History - Energy Monitor V2
+{% endblock %}
+
+{% block page_title %}
+History
+{% endblock %}
+
+{% block head %}
+
+<link
+    rel="stylesheet"
+    href="{{ url_for(
+        'static',
+        filename='css/history.css'
+    ) }}"
+>
+
+{% endblock %}
+
+{% block content %}
+
+<div class="history-page">
+
+    <!-- =====================================================
+         Header
+    ====================================================== -->
+
+    <div class="history-header">
+
+        <div class="history-device">
+
+            <div class="history-device-icon">
+                <i class="bi bi-graph-up"></i>
+            </div>
+
+            <div>
+
+                <h2>
+                    {{ device.name }}
+                </h2>
+
+                <div class="history-device-meta">
+
+                    <span>
+                        {{ device.driver }}
+                    </span>
+
+                    <span class="history-meta-separator">
+                        &bull
+                    </span>
+
+                    <span>
+                        Device ID {{ device.id }}
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <a
+            href="{{ url_for(
+                'pages.device_details',
+                device_id=device.id
+            ) }}"
+            class="btn btn-outline-secondary"
+        >
+            <i class="bi bi-arrow-left me-1"></i>
+            Back to device
+        </a>
+
+    </div>
+
+
+    <!-- =====================================================
+         Controls
+    ====================================================== -->
+
+    <section class="history-controls">
+
+        <div class="history-control-group">
+
+            <label
+                for="history-field"
+                class="history-control-label"
+            >
+                Parameter
+            </label>
+
+            <select
+                id="history-field"
+                class="form-select"
+            >
+
+                {% for field_name, field_info in history_fields.items() %}
+
+                <option
+                    value="{{ field_name }}"
+                    {% if field_name == default_field %}
+                        selected
+                    {% endif %}
+                >
+                    {{ field_info.title }}
+
+                    {% if field_info.unit %}
+                        ({{ field_info.unit }})
+                    {% endif %}
+                </option>
+
+                {% endfor %}
+
+            </select>
+
+        </div>
+
+
+        <div class="history-control-group history-range-group">
+
+            <div class="history-control-label">
+                Time range
+            </div>
+
+            <div
+                class="history-range-buttons"
+                role="group"
+                aria-label="History time range"
+            >
+
+                <button
+                    type="button"
+                    class="history-range-button active"
+                    data-range="1h"
+                >
+                    1 h
+                </button>
+
+                <button
+                    type="button"
+                    class="history-range-button"
+                    data-range="24h"
+                >
+                    24 h
+                </button>
+
+                <button
+                    type="button"
+                    class="history-range-button"
+                    data-range="7d"
+                >
+                    7 d
+                </button>
+
+                <button
+                    type="button"
+                    class="history-range-button"
+                    data-range="30d"
+                >
+                    30 d
+                </button>
+
+                <button
+                    type="button"
+                    class="history-range-button"
+                    data-range="custom"
+                >
+                    Custom
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div class="history-actions">
+
+            <button
+                id="history-refresh"
+                type="button"
+                class="btn btn-primary"
+            >
+                <i class="bi bi-arrow-clockwise me-1"></i>
+                Refresh
+            </button>
+
+            <button
+                id="history-reset-zoom"
+                type="button"
+                class="btn btn-outline-secondary"
+            >
+                <i class="bi bi-search me-1"></i>
+                Reset zoom
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         Custom range
+    ====================================================== -->
+
+    <section
+        id="history-custom-range"
+        class="history-custom-range d-none"
+    >
+
+        <div class="history-control-group">
+
+            <label
+                for="history-start"
+                class="history-control-label"
+            >
+                Start
+            </label>
+
+            <input
+                id="history-start"
+                type="datetime-local"
+                class="form-control"
+            >
+
+        </div>
+
+        <div class="history-control-group">
+
+            <label
+                for="history-stop"
+                class="history-control-label"
+            >
+                Stop
+            </label>
+
+            <input
+                id="history-stop"
+                type="datetime-local"
+                class="form-control"
+            >
+
+        </div>
+
+        <div class="history-custom-action">
+
+            <button
+                id="history-load-custom"
+                type="button"
+                class="btn btn-primary"
+            >
+                Load custom range
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         Error
+    ====================================================== -->
+
+    <div
+        id="history-error"
+        class="alert alert-danger d-none"
+        role="alert"
+    >
+
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+
+        <span id="history-error-text"></span>
+
+    </div>
+
+
+    <!-- =====================================================
+         Chart
+    ====================================================== -->
+
+    <section class="history-chart-card">
+
+        <div class="history-chart-header">
+
+            <div>
+
+                <h3 id="history-chart-title">
+                    Total active power
+                </h3>
+
+                <div id="history-chart-period">
+                    Last hour
+                </div>
+
+            </div>
+
+            <div
+                id="history-loading"
+                class="history-loading d-none"
+            >
+                <span class="spinner-border spinner-border-sm"></span>
+                Loading...
+            </div>
+
+        </div>
+
+        <div class="history-chart-container">
+
+            <canvas id="history-chart"></canvas>
+
+            <div
+                id="history-empty"
+                class="history-empty d-none"
+            >
+                <i class="bi bi-database-x"></i>
+
+                <h4>
+                    No historical data
+                </h4>
+
+                <p>
+                    No measurements were found for the selected period.
+                </p>
+            </div>
+
+        </div>
+
+        <div class="history-chart-help">
+
+            <span>
+                <i class="bi bi-mouse me-1"></i>
+                Mouse wheel: zoom
+            </span>
+
+            <span>
+                <i class="bi bi-arrows-move me-1"></i>
+                Drag: pan
+            </span>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         Statistics
+    ====================================================== -->
+
+    <section class="history-statistics">
+
+        <div class="history-stat-card">
+
+            <div class="history-stat-label">
+                Minimum
+            </div>
+
+            <div class="history-stat-value">
+
+                <span id="history-min">
+                    --
+                </span>
+
+                <small
+                    id="history-min-unit"
+                    class="history-stat-unit"
+                ></small>
+
+            </div>
+
+        </div>
+
+
+        <div class="history-stat-card">
+
+            <div class="history-stat-label">
+                Maximum
+            </div>
+
+            <div class="history-stat-value">
+
+                <span id="history-max">
+                    --
+                </span>
+
+                <small
+                    id="history-max-unit"
+                    class="history-stat-unit"
+                ></small>
+
+            </div>
+
+        </div>
+
+
+        <div class="history-stat-card">
+
+            <div class="history-stat-label">
+                Average
+            </div>
+
+            <div class="history-stat-value">
+
+                <span id="history-average">
+                    --
+                </span>
+
+                <small
+                    id="history-average-unit"
+                    class="history-stat-unit"
+                ></small>
+
+            </div>
+
+        </div>
+
+
+        <div class="history-stat-card">
+
+            <div class="history-stat-label">
+                Latest value
+            </div>
+
+            <div class="history-stat-value">
+
+                <span id="history-latest">
+                    --
+                </span>
+
+                <small
+                    id="history-latest-unit"
+                    class="history-stat-unit"
+                ></small>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         Dataset information
+    ====================================================== -->
+
+    <section class="history-information">
+
+        <div class="history-information-item">
+
+            <span class="history-information-label">
+                Samples
+            </span>
+
+            <span
+                id="history-samples"
+                class="history-information-value"
+            >
+                0
+            </span>
+
+        </div>
+
+        <div class="history-information-item">
+
+            <span class="history-information-label">
+                First sample
+            </span>
+
+            <span
+                id="history-first-sample"
+                class="history-information-value"
+            >
+                --
+            </span>
+
+        </div>
+
+        <div class="history-information-item">
+
+            <span class="history-information-label">
+                Last sample
+            </span>
+
+            <span
+                id="history-last-sample"
+                class="history-information-value"
+            >
+                --
+            </span>
+
+        </div>
+
+    </section>
+
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+
+<script>
+    const historyApiUrl =
+        {{ url_for(
+            'history.history_api',
+            device_id=device.id
+        ) | tojson }};
+
+    const historyDefaultField =
+        {{ default_field | tojson }};
+
+    const historyDefaultRange =
+        {{ default_range | tojson }};
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0/dist/chartjs-plugin-zoom.min.js"></script>
+
+<script src="{{ url_for('static', filename='js/chart-manager.js') }}"></script>
+
+<script src="{{ url_for('static', filename='js/history.js') }}"></script>
+
+{% endblock %}

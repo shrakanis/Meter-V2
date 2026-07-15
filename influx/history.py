@@ -14,6 +14,7 @@ from typing import Any
 
 from influxdb_client import InfluxDBClient
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -23,7 +24,6 @@ class HistoryReader:
 
     Supported ranges
     ----------------
-
     1h
     24h
     7d
@@ -32,35 +32,22 @@ class HistoryReader:
     """
 
     _RANGES = {
-
         "1h": (
-
             "-1h",
             "10s",
-
         ),
-
         "24h": (
-
             "-24h",
             "1m",
-
         ),
-
         "7d": (
-
             "-7d",
             "10m",
-
         ),
-
         "30d": (
-
             "-30d",
             "1h",
-
         ),
-
     }
 
     def __init__(
@@ -72,11 +59,8 @@ class HistoryReader:
     ) -> None:
 
         self._client = client
-
         self._bucket = bucket
-
         self._org = org
-
         self._measurement = measurement
 
     # ---------------------------------------------------------
@@ -85,8 +69,27 @@ class HistoryReader:
 
     @property
     def query_api(self):
+        """Return InfluxDB query API."""
 
         return self._client.query_api()
+
+    @staticmethod
+    def _format_timestamp(
+        timestamp: datetime,
+    ) -> str:
+        """
+        Return ISO-8601 timestamp with timezone information.
+
+        InfluxDB returns UTC timestamps. Keeping the timezone allows
+        the browser to convert UTC automatically to the local timezone.
+        """
+
+        value = timestamp.isoformat()
+
+        if value.endswith("+00:00"):
+            value = value[:-6] + "Z"
+
+        return value
 
     # ---------------------------------------------------------
     # Public
@@ -102,40 +105,34 @@ class HistoryReader:
         stop: datetime | None = None,
     ) -> dict[str, list[Any]]:
         """
-        Read history.
+        Read device history.
 
         Returns
         -------
-        {
-            labels: [],
-            values: [],
-        }
+        dict
+            {
+                "labels": [],
+                "values": [],
+            }
         """
 
         if range_name == "custom":
 
             if start is None or stop is None:
-
                 raise ValueError(
                     "Custom range requires start and stop."
                 )
 
             flux = self._build_custom_query(
-
                 device_id=device_id,
-
                 field=field,
-
                 start=start,
-
                 stop=stop,
-
             )
 
         else:
 
             if range_name not in self._RANGES:
-
                 raise ValueError(
                     f"Unsupported range '{range_name}'"
                 )
@@ -145,54 +142,70 @@ class HistoryReader:
             ]
 
             flux = self._build_query(
-
                 device_id=device_id,
-
                 field=field,
-
                 start=start_value,
-
                 window=window,
-
             )
 
         labels: list[str] = []
-
         values: list[float] = []
 
         try:
 
             tables = self.query_api.query(
-
                 query=flux,
-
                 org=self._org,
-
             )
+
+            records: list[
+                tuple[datetime, float]
+            ] = []
 
             for table in tables:
 
                 for record in table.records:
 
-                    timestamp = (
-                        record.get_time()
-                    )
+                    timestamp = record.get_time()
+                    raw_value = record.get_value()
 
-                    value = (
-                        record.get_value()
-                    )
+                    if timestamp is None:
+                        continue
 
-                    labels.append(
+                    if raw_value is None:
+                        continue
 
-                        timestamp.strftime(
-                            "%Y-%m-%d %H:%M:%S"
+                    try:
+                        value = float(raw_value)
+
+                    except (
+                        TypeError,
+                        ValueError,
+                    ):
+                        continue
+
+                    records.append(
+                        (
+                            timestamp,
+                            value,
                         )
-
                     )
 
-                    values.append(
-                        value
+            records.sort(
+                key=lambda item: item[0]
+            )
+
+            for timestamp, value in records:
+
+                labels.append(
+                    self._format_timestamp(
+                        timestamp
                     )
+                )
+
+                values.append(
+                    value
+                )
 
         except Exception:
 
@@ -201,11 +214,8 @@ class HistoryReader:
             )
 
         return {
-
             "labels": labels,
-
             "values": values,
-
         }
 
     # ---------------------------------------------------------
@@ -232,6 +242,7 @@ from(bucket: "{self._bucket}")
     fn: mean,
     createEmpty: false,
 )
+|> sort(columns: ["_time"])
 |> yield(name: "history")
 """
 
@@ -249,19 +260,15 @@ from(bucket: "{self._bucket}")
         ).total_seconds()
 
         if seconds <= 3600:
-
             window = "10s"
 
         elif seconds <= 86400:
-
             window = "1m"
 
         elif seconds <= 604800:
-
             window = "10m"
 
         else:
-
             window = "1h"
 
         return f"""
@@ -278,5 +285,6 @@ from(bucket: "{self._bucket}")
     fn: mean,
     createEmpty: false,
 )
+|> sort(columns: ["_time"])
 |> yield(name: "history")
 """

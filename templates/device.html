@@ -37,25 +37,38 @@ Device
 
     </div>
 
-    <div>
+    <div
+        class="d-flex align-items-center gap-2"
+    >
+
+        <a
+            href="{{ url_for(
+                'history.history_page',
+                device_id=device.id
+            ) }}"
+            class="btn btn-primary"
+        >
+            <i class="bi bi-clock-history me-1"></i>
+            History
+        </a>
 
         {% if device.connected %}
 
-            <span
-                id="device-status"
-                class="badge bg-success device-status"
-            >
-                ONLINE
-            </span>
+        <span
+            id="device-status"
+            class="badge bg-success device-status"
+        >
+            ONLINE
+        </span>
 
         {% else %}
 
-            <span
-                id="device-status"
-                class="badge bg-danger device-status"
-            >
-                OFFLINE
-            </span>
+        <span
+            id="device-status"
+            class="badge bg-danger device-status"
+        >
+            OFFLINE
+        </span>
 
         {% endif %}
 
