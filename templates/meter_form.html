@@ -8,13 +8,15 @@
 
 <div class="row justify-content-center">
 
-    <div class="col-lg-8">
+    <div class="col-xl-9 col-lg-10">
 
         <div class="card shadow-sm">
 
             <div class="card-header">
 
                 <h4 class="mb-0">
+
+                    <i class="bi bi-speedometer2 me-2"></i>
 
                     {{ title }}
 
@@ -28,141 +30,434 @@
 
                     {{ form.hidden_tag() }}
 
+                    <!-- ==================================================
+                         Enabled
+                    =================================================== -->
+
                     <div class="form-check mb-4">
 
-                        {{ form.enabled(class="form-check-input") }}
+                        {{ form.enabled(
+                            class="form-check-input"
+                        ) }}
 
-                        {{ form.enabled.label(class="form-check-label") }}
+                        {{ form.enabled.label(
+                            class="form-check-label"
+                        ) }}
 
                     </div>
+
+
+                    <!-- ==================================================
+                         General
+                    =================================================== -->
+
+                    <h5 class="mb-3">
+                        General
+                    </h5>
 
                     <div class="row">
 
                         <div class="col-md-6 mb-3">
 
-                            {{ form.name.label(class="form-label") }}
+                            {{ form.name.label(
+                                class="form-label"
+                            ) }}
 
-                            {{ form.name(class="form-control") }}
+                            {{ form.name(
+                                class="form-control"
+                            ) }}
+
+                            {% for error in form.name.errors %}
+
+                                <div class="text-danger small mt-1">
+                                    {{ error }}
+                                </div>
+
+                            {% endfor %}
 
                         </div>
 
                         <div class="col-md-6 mb-3">
 
-                            {{ form.driver.label(class="form-label") }}
+                            {{ form.meter_type.label(
+                                class="form-label"
+                            ) }}
 
-                            {{ form.driver(class="form-select") }}
+                            {{ form.meter_type(
+                                class="form-select",
+                                id="meter-type"
+                            ) }}
 
-                        </div>
+                            {% for error in form.meter_type.errors %}
 
-                    </div>
+                                <div class="text-danger small mt-1">
+                                    {{ error }}
+                                </div>
 
-                    <div class="mb-3">
-
-                        {{ form.description.label(class="form-label") }}
-
-                        {{ form.description(class="form-control") }}
-
-                    </div>
-
-                    <div class="row">
-
-                        <div class="col-md-4 mb-3">
-
-                            {{ form.protocol.label(class="form-label") }}
-
-                            {{ form.protocol(class="form-select", id="protocol") }}
-
-                        </div>
-
-                        <div class="col-md-4 mb-3">
-
-                            {{ form.slave.label(class="form-label") }}
-
-                            {{ form.slave(class="form-control") }}
-
-                        </div>
-
-                        <div class="col-md-4 mb-3">
-
-                            {{ form.timeout.label(class="form-label") }}
-
-                            {{ form.timeout(class="form-control") }}
+                            {% endfor %}
 
                         </div>
 
                     </div>
 
-                    <hr>
+                    <div class="mb-4">
 
-                    <h5>TCP</h5>
+                        {{ form.description.label(
+                            class="form-label"
+                        ) }}
 
-                    <div id="tcp-settings">
+                        {{ form.description(
+                            class="form-control"
+                        ) }}
+
+                        {% for error in form.description.errors %}
+
+                            <div class="text-danger small mt-1">
+                                {{ error }}
+                            </div>
+
+                        {% endfor %}
+
+                    </div>
+
+
+                    <!-- ==================================================
+                         Modbus
+                    =================================================== -->
+
+                    <div id="modbus-settings">
+
+                        <hr>
+
+                        <h5 class="mb-3">
+                            Modbus settings
+                        </h5>
 
                         <div class="row">
 
-                            <div class="col-md-8 mb-3">
+                            <div class="col-md-6 mb-3">
 
-                                {{ form.address.label(class="form-label") }}
+                                {{ form.driver.label(
+                                    class="form-label"
+                                ) }}
 
-                                {{ form.address(class="form-control") }}
+                                {{ form.driver(
+                                    class="form-select",
+                                    id="driver"
+                                ) }}
+
+                                {% for error in form.driver.errors %}
+
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+
+                                {% endfor %}
 
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-6 mb-3">
 
-                                {{ form.port.label(class="form-label") }}
+                                {{ form.protocol.label(
+                                    class="form-label"
+                                ) }}
 
-                                {{ form.port(class="form-control") }}
+                                {{ form.protocol(
+                                    class="form-select",
+                                    id="protocol"
+                                ) }}
+
+                                {% for error in form.protocol.errors %}
+
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+
+                                {% endfor %}
 
                             </div>
-
-                        </div>
-
-                    </div>
-
-                    <h5 class="mt-3">RTU</h5>
-
-                    <div id="rtu-settings">
-
-                        <div class="mb-3">
-
-                            {{ form.serial_port.label(class="form-label") }}
-
-                            {{ form.serial_port(class="form-control") }}
 
                         </div>
 
                         <div class="row">
 
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-6 mb-3">
 
-                                {{ form.baudrate.label(class="form-label") }}
+                                {{ form.slave.label(
+                                    class="form-label"
+                                ) }}
 
-                                {{ form.baudrate(class="form-control") }}
+                                {{ form.slave(
+                                    class="form-control"
+                                ) }}
 
-                            </div>
+                                {% for error in form.slave.errors %}
 
-                            <div class="col-md-3 mb-3">
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
 
-                                {{ form.bytesize.label(class="form-label") }}
-
-                                {{ form.bytesize(class="form-control") }}
-
-                            </div>
-
-                            <div class="col-md-3 mb-3">
-
-                                {{ form.parity.label(class="form-label") }}
-
-                                {{ form.parity(class="form-select") }}
+                                {% endfor %}
 
                             </div>
 
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-6 mb-3">
 
-                                {{ form.stopbits.label(class="form-label") }}
+                                {{ form.timeout.label(
+                                    class="form-label"
+                                ) }}
 
-                                {{ form.stopbits(class="form-control") }}
+                                {{ form.timeout(
+                                    class="form-control"
+                                ) }}
+
+                                {% for error in form.timeout.errors %}
+
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+
+                                {% endfor %}
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- ==============================================
+                             Modbus TCP / RTU over TCP
+                        =============================================== -->
+
+                        <div id="tcp-settings">
+
+                            <div class="card bg-light border-0 mb-4">
+
+                                <div class="card-body">
+
+                                    <h6 class="mb-3">
+                                        TCP connection
+                                    </h6>
+
+                                    <div class="row">
+
+                                        <div class="col-md-8 mb-3">
+
+                                            {{ form.address.label(
+                                                class="form-label"
+                                            ) }}
+
+                                            {{ form.address(
+                                                class="form-control",
+                                                placeholder="192.168.0.230"
+                                            ) }}
+
+                                            {% for error in form.address.errors %}
+
+                                                <div class="text-danger small mt-1">
+                                                    {{ error }}
+                                                </div>
+
+                                            {% endfor %}
+
+                                        </div>
+
+                                        <div class="col-md-4 mb-3">
+
+                                            {{ form.port.label(
+                                                class="form-label"
+                                            ) }}
+
+                                            {{ form.port(
+                                                class="form-control"
+                                            ) }}
+
+                                            {% for error in form.port.errors %}
+
+                                                <div class="text-danger small mt-1">
+                                                    {{ error }}
+                                                </div>
+
+                                            {% endfor %}
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- ==============================================
+                             Modbus RTU
+                        =============================================== -->
+
+                        <div id="rtu-settings">
+
+                            <div class="card bg-light border-0 mb-4">
+
+                                <div class="card-body">
+
+                                    <h6 class="mb-3">
+                                        RTU serial connection
+                                    </h6>
+
+                                    <div class="mb-3">
+
+                                        {{ form.serial_port.label(
+                                            class="form-label"
+                                        ) }}
+
+                                        {{ form.serial_port(
+                                            class="form-select"
+                                        ) }}
+
+                                        {% for error in form.serial_port.errors %}
+
+                                            <div class="text-danger small mt-1">
+                                                {{ error }}
+                                            </div>
+
+                                        {% endfor %}
+
+                                    </div>
+
+                                    <div class="row">
+
+                                        <div class="col-md-3 mb-3">
+
+                                            {{ form.baudrate.label(
+                                                class="form-label"
+                                            ) }}
+
+                                            {{ form.baudrate(
+                                                class="form-control"
+                                            ) }}
+
+                                            {% for error in form.baudrate.errors %}
+
+                                                <div class="text-danger small mt-1">
+                                                    {{ error }}
+                                                </div>
+
+                                            {% endfor %}
+
+                                        </div>
+
+                                        <div class="col-md-3 mb-3">
+
+                                            {{ form.bytesize.label(
+                                                class="form-label"
+                                            ) }}
+
+                                            {{ form.bytesize(
+                                                class="form-control"
+                                            ) }}
+
+                                            {% for error in form.bytesize.errors %}
+
+                                                <div class="text-danger small mt-1">
+                                                    {{ error }}
+                                                </div>
+
+                                            {% endfor %}
+
+                                        </div>
+
+                                        <div class="col-md-3 mb-3">
+
+                                            {{ form.parity.label(
+                                                class="form-label"
+                                            ) }}
+
+                                            {{ form.parity(
+                                                class="form-select"
+                                            ) }}
+
+                                            {% for error in form.parity.errors %}
+
+                                                <div class="text-danger small mt-1">
+                                                    {{ error }}
+                                                </div>
+
+                                            {% endfor %}
+
+                                        </div>
+
+                                        <div class="col-md-3 mb-3">
+
+                                            {{ form.stopbits.label(
+                                                class="form-label"
+                                            ) }}
+
+                                            {{ form.stopbits(
+                                                class="form-control"
+                                            ) }}
+
+                                            {% for error in form.stopbits.errors %}
+
+                                                <div class="text-danger small mt-1">
+                                                    {{ error }}
+                                                </div>
+
+                                            {% endfor %}
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- ==============================================
+                             CT / PT
+                        =============================================== -->
+
+                        <div class="row">
+
+                            <div class="col-md-6 mb-3">
+
+                                {{ form.ct.label(
+                                    class="form-label"
+                                ) }}
+
+                                {{ form.ct(
+                                    class="form-control"
+                                ) }}
+
+                                {% for error in form.ct.errors %}
+
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+
+                                {% endfor %}
+
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+
+                                {{ form.pt.label(
+                                    class="form-label"
+                                ) }}
+
+                                {{ form.pt(
+                                    class="form-control"
+                                ) }}
+
+                                {% for error in form.pt.errors %}
+
+                                    <div class="text-danger small mt-1">
+                                        {{ error }}
+                                    </div>
+
+                                {% endfor %}
 
                             </div>
 
@@ -170,39 +465,185 @@
 
                     </div>
 
-                    <hr>
 
-                    <div class="row">
+                    <!-- ==================================================
+                         P1
+                    =================================================== -->
 
-                        <div class="col-md-6 mb-3">
+                    <div id="p1-settings">
 
-                            {{ form.ct.label(class="form-label") }}
+                        <hr>
 
-                            {{ form.ct(class="form-control") }}
+                        <h5 class="mb-3">
+                            P1 Smart Meter settings
+                        </h5>
+
+                        <div class="alert alert-info">
+
+                            <i class="bi bi-info-circle me-2"></i>
+
+                            Connect the P1 adapter to an Orange Pi USB port
+                            and select the detected serial device.
 
                         </div>
 
-                        <div class="col-md-6 mb-3">
+                        <div class="card bg-light border-0 mb-4">
 
-                            {{ form.pt.label(class="form-label") }}
+                            <div class="card-body">
 
-                            {{ form.pt(class="form-control") }}
+                                <div class="mb-3">
+
+                                    {{ form.serial_port.label(
+                                        class="form-label"
+                                    ) }}
+
+                                    {{ form.serial_port(
+                                        class="form-select"
+                                    ) }}
+
+                                    {% for error in form.serial_port.errors %}
+
+                                        <div class="text-danger small mt-1">
+                                            {{ error }}
+                                        </div>
+
+                                    {% endfor %}
+
+                                </div>
+
+                                <div class="row">
+
+                                    <div class="col-md-3 mb-3">
+
+                                        {{ form.baudrate.label(
+                                            class="form-label"
+                                        ) }}
+
+                                        {{ form.baudrate(
+                                            class="form-control",
+                                            id="p1-baudrate"
+                                        ) }}
+
+                                        {% for error in form.baudrate.errors %}
+
+                                            <div class="text-danger small mt-1">
+                                                {{ error }}
+                                            </div>
+
+                                        {% endfor %}
+
+                                    </div>
+
+                                    <div class="col-md-3 mb-3">
+
+                                        {{ form.bytesize.label(
+                                            class="form-label"
+                                        ) }}
+
+                                        {{ form.bytesize(
+                                            class="form-control"
+                                        ) }}
+
+                                        {% for error in form.bytesize.errors %}
+
+                                            <div class="text-danger small mt-1">
+                                                {{ error }}
+                                            </div>
+
+                                        {% endfor %}
+
+                                    </div>
+
+                                    <div class="col-md-3 mb-3">
+
+                                        {{ form.parity.label(
+                                            class="form-label"
+                                        ) }}
+
+                                        {{ form.parity(
+                                            class="form-select"
+                                        ) }}
+
+                                        {% for error in form.parity.errors %}
+
+                                            <div class="text-danger small mt-1">
+                                                {{ error }}
+                                            </div>
+
+                                        {% endfor %}
+
+                                    </div>
+
+                                    <div class="col-md-3 mb-3">
+
+                                        {{ form.stopbits.label(
+                                            class="form-label"
+                                        ) }}
+
+                                        {{ form.stopbits(
+                                            class="form-control"
+                                        ) }}
+
+                                        {% for error in form.stopbits.errors %}
+
+                                            <div class="text-danger small mt-1">
+                                                {{ error }}
+                                            </div>
+
+                                        {% endfor %}
+
+                                    </div>
+
+                                </div>
+
+                                <div class="row">
+
+                                    <div class="col-md-6 mb-3">
+
+                                        {{ form.timeout.label(
+                                            class="form-label"
+                                        ) }}
+
+                                        {{ form.timeout(
+                                            class="form-control"
+                                        ) }}
+
+                                        {% for error in form.timeout.errors %}
+
+                                            <div class="text-danger small mt-1">
+                                                {{ error }}
+                                            </div>
+
+                                        {% endfor %}
+
+                                    </div>
+
+                                </div>
+
+                            </div>
 
                         </div>
 
                     </div>
+
+
+                    <!-- ==================================================
+                         Actions
+                    =================================================== -->
 
                     <div class="mt-4 d-flex justify-content-between">
 
                         <a
                             href="{{ url_for('pages.meters') }}"
-                            class="btn btn-secondary">
-
+                            class="btn btn-secondary"
+                        >
+                            <i class="bi bi-arrow-left me-1"></i>
                             Cancel
-
                         </a>
 
-                        {{ form.submit(class="btn btn-primary") }}
+                        {{ form.submit(
+                            class="btn btn-primary"
+                        ) }}
 
                     </div>
 
@@ -216,52 +657,195 @@
 
 </div>
 
+{% endblock %}
+
+
+{% block scripts %}
+
 <script>
+"use strict";
+
+
+const meterTypeElement =
+    document.getElementById(
+        "meter-type"
+    );
+
+const protocolElement =
+    document.getElementById(
+        "protocol"
+    );
+
+const driverElement =
+    document.getElementById(
+        "driver"
+    );
+
+const modbusSettings =
+    document.getElementById(
+        "modbus-settings"
+    );
+
+const p1Settings =
+    document.getElementById(
+        "p1-settings"
+    );
+
+const tcpSettings =
+    document.getElementById(
+        "tcp-settings"
+    );
+
+const rtuSettings =
+    document.getElementById(
+        "rtu-settings"
+    );
+
+const p1Baudrate =
+    document.getElementById(
+        "p1-baudrate"
+    );
+
 
 function updateProtocol() {
 
-    const protocol = document.getElementById("protocol").value;
+    if (!protocolElement) {
+        return;
+    }
 
-    const tcp = document.getElementById("tcp-settings");
-    const rtu = document.getElementById("rtu-settings");
+    const protocol =
+        protocolElement.value;
 
     switch (protocol) {
 
-        // Modbus TCP
         case "1":
 
-            tcp.style.display = "";
-            rtu.style.display = "none";
+            tcpSettings.style.display =
+                "";
+
+            rtuSettings.style.display =
+                "none";
+
             break;
 
-        // Modbus RTU
         case "2":
 
-            tcp.style.display = "none";
-            rtu.style.display = "";
+            tcpSettings.style.display =
+                "none";
+
+            rtuSettings.style.display =
+                "";
+
             break;
 
-        // RTU over TCP
         case "3":
 
-            tcp.style.display = "";
-            rtu.style.display = "none";
+            tcpSettings.style.display =
+                "";
+
+            rtuSettings.style.display =
+                "none";
+
             break;
 
         default:
 
-            tcp.style.display = "";
-            rtu.style.display = "none";
-    }
+            tcpSettings.style.display =
+                "";
 
+            rtuSettings.style.display =
+                "none";
+
+            break;
+    }
 }
 
-document
-    .getElementById("protocol")
-    .addEventListener("change", updateProtocol);
 
-updateProtocol();
+function updateMeterType() {
 
+    if (!meterTypeElement) {
+        return;
+    }
+
+    const meterType =
+        meterTypeElement.value;
+
+    if (meterType === "p1") {
+
+        modbusSettings.style.display =
+            "none";
+
+        p1Settings.style.display =
+            "";
+
+        if (driverElement) {
+            driverElement.value =
+                "p1";
+        }
+
+        if (
+            p1Baudrate
+            && (
+                !p1Baudrate.value
+                || p1Baudrate.value === "9600"
+            )
+        ) {
+            p1Baudrate.value =
+                "115200";
+        }
+
+    } else {
+
+        modbusSettings.style.display =
+            "";
+
+        p1Settings.style.display =
+            "none";
+
+        if (
+            driverElement
+            && driverElement.value === "p1"
+        ) {
+
+            const firstModbusOption =
+                Array.from(
+                    driverElement.options
+                ).find(
+                    option =>
+                        option.value !== "p1"
+                );
+
+            if (firstModbusOption) {
+
+                driverElement.value =
+                    firstModbusOption.value;
+            }
+        }
+
+        updateProtocol();
+    }
+}
+
+
+if (meterTypeElement) {
+
+    meterTypeElement.addEventListener(
+        "change",
+        updateMeterType
+    );
+}
+
+
+if (protocolElement) {
+
+    protocolElement.addEventListener(
+        "change",
+        updateProtocol
+    );
+}
+
+
+updateMeterType();
 </script>
 
 {% endblock %}

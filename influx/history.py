@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Any
+from typing import Any, Iterable
 
 from influxdb_client import InfluxDBClient
 
@@ -55,7 +55,7 @@ class HistoryReader:
         client: InfluxDBClient,
         bucket: str,
         org: str,
-        measurement: str = "energy_monitor",
+        measurement: str = "meter",
     ) -> None:
 
         self._client = client
@@ -63,9 +63,9 @@ class HistoryReader:
         self._org = org
         self._measurement = measurement
 
-    # ---------------------------------------------------------
+    # ------------------------------------------------------------------
     # Helpers
-    # ---------------------------------------------------------
+    # ------------------------------------------------------------------
 
     @property
     def query_api(self):
@@ -81,7 +81,7 @@ class HistoryReader:
         Return ISO-8601 timestamp with timezone information.
 
         InfluxDB returns UTC timestamps. Keeping the timezone allows
-        the browser to convert UTC automatically to the local timezone.
+        the browser to convert UTC automatically to local time.
         """
 
         value = timestamp.isoformat()
@@ -91,9 +91,125 @@ class HistoryReader:
 
         return value
 
-    # ---------------------------------------------------------
-    # Public
-    # ---------------------------------------------------------
+    @classmethod
+    def _window_for_custom_range(
+        cls,
+        start: datetime,
+        stop: datetime,
+    ) -> str:
+        """Return aggregation window for a custom range."""
+
+        seconds = (
+            stop - start
+        ).total_seconds()
+
+        if seconds <= 0:
+            raise ValueError(
+                "Stop time must be later than start time."
+            )
+
+        if seconds <= 3600:
+            return "10s"
+
+        if seconds <= 86400:
+            return "1m"
+
+        if seconds <= 604800:
+            return "10m"
+
+        return "1h"
+
+    @classmethod
+    def _range_values(
+        cls,
+        *,
+        range_name: str,
+        start: datetime | None,
+        stop: datetime | None,
+    ) -> tuple[str, str | None, str]:
+        """
+        Return Flux start, optional stop and aggregation window.
+        """
+
+        if range_name == "custom":
+
+            if start is None or stop is None:
+                raise ValueError(
+                    "Custom range requires start and stop."
+                )
+
+            window = cls._window_for_custom_range(
+                start,
+                stop,
+            )
+
+            return (
+                f'time(v: "{start.isoformat()}")',
+                f'time(v: "{stop.isoformat()}")',
+                window,
+            )
+
+        if range_name not in cls._RANGES:
+            raise ValueError(
+                f"Unsupported range '{range_name}'"
+            )
+
+        start_value, window = cls._RANGES[
+            range_name
+        ]
+
+        return (
+            start_value,
+            None,
+            window,
+        )
+
+    @staticmethod
+    def _normalize_fields(
+        fields: Iterable[str],
+    ) -> list[str]:
+        """Return unique, non-empty field names."""
+
+        result: list[str] = []
+
+        for field in fields:
+
+            normalized = str(
+                field
+            ).strip()
+
+            if not normalized:
+                continue
+
+            if normalized in result:
+                continue
+
+            result.append(
+                normalized
+            )
+
+        if not result:
+            raise ValueError(
+                "At least one history field is required."
+            )
+
+        return result
+
+    @staticmethod
+    def _escape_flux_string(
+        value: str,
+    ) -> str:
+        """Escape a value used inside a Flux string."""
+
+        return (
+            value
+            .replace("\\", "\\\\")
+            .replace('"', '\\"')
+        )
+
+    # ------------------------------------------------------------------
+    # Single field history
+    # ------------------------------------------------------------------
 
     def history(
         self,
@@ -105,51 +221,107 @@ class HistoryReader:
         stop: datetime | None = None,
     ) -> dict[str, list[Any]]:
         """
-        Read device history.
+        Read history for one field.
 
         Returns
         -------
-        dict
-            {
-                "labels": [],
-                "values": [],
-            }
+        {
+            "labels": [],
+            "values": [],
+        }
         """
 
-        if range_name == "custom":
+        result = self.history_multi(
+            device_id=device_id,
+            fields=[
+                field,
+            ],
+            range_name=range_name,
+            start=start,
+            stop=stop,
+        )
 
-            if start is None or stop is None:
-                raise ValueError(
-                    "Custom range requires start and stop."
-                )
+        dataset = result[
+            "datasets"
+        ][0]
 
-            flux = self._build_custom_query(
-                device_id=device_id,
-                field=field,
+        return {
+            "labels": result[
+                "labels"
+            ],
+            "values": dataset[
+                "values"
+            ],
+        }
+
+    # ------------------------------------------------------------------
+    # Multiple field history
+    # ------------------------------------------------------------------
+
+    def history_multi(
+        self,
+        *,
+        device_id: int,
+        fields: Iterable[str],
+        range_name: str = "1h",
+        start: datetime | None = None,
+        stop: datetime | None = None,
+    ) -> dict[str, Any]:
+        """
+        Read multiple fields using one InfluxDB query.
+
+        Values from all fields are aligned against one common timestamp
+        list. A missing value at a timestamp is returned as None.
+
+        Returns
+        -------
+        {
+            "labels": [
+                "2026-07-15T10:00:00Z",
+                ...
+            ],
+            "datasets": [
+                {
+                    "field": "reactive_power_l1",
+                    "values": [
+                        2.5,
+                        ...
+                    ],
+                },
+                ...
+            ],
+        }
+        """
+
+        normalized_fields = (
+            self._normalize_fields(
+                fields
+            )
+        )
+
+        start_value, stop_value, window = (
+            self._range_values(
+                range_name=range_name,
                 start=start,
                 stop=stop,
             )
+        )
 
-        else:
+        flux = self._build_multi_query(
+            device_id=device_id,
+            fields=normalized_fields,
+            start=start_value,
+            stop=stop_value,
+            window=window,
+        )
 
-            if range_name not in self._RANGES:
-                raise ValueError(
-                    f"Unsupported range '{range_name}'"
-                )
-
-            start_value, window = self._RANGES[
-                range_name
-            ]
-
-            flux = self._build_query(
-                device_id=device_id,
-                field=field,
-                start=start_value,
-                window=window,
-            )
-
-        labels: list[str] = []
-        values: list[float] = []
+        field_records: dict[
+            str,
+            dict[datetime, float],
+        ] = {
+            field: {}
+            for field in normalized_fields
+        }
 
         try:
 
@@ -158,16 +330,21 @@ class HistoryReader:
                 org=self._org,
             )
 
-            records: list[
-                tuple[datetime, float]
-            ] = []
-
             for table in tables:
 
                 for record in table.records:
 
-                    timestamp = record.get_time()
-                    raw_value = record.get_value()
+                    timestamp = (
+                        record.get_time()
+                    )
+
+                    raw_value = (
+                        record.get_value()
+                    )
+
+                    field_name = (
+                        record.get_field()
+                    )
 
                     if timestamp is None:
                         continue
@@ -175,116 +352,159 @@ class HistoryReader:
                     if raw_value is None:
                         continue
 
+                    if field_name not in field_records:
+                        continue
+
                     try:
-                        value = float(raw_value)
+
+                        value = float(
+                            raw_value
+                        )
 
                     except (
                         TypeError,
                         ValueError,
                     ):
+
                         continue
 
-                    records.append(
-                        (
-                            timestamp,
-                            value,
-                        )
-                    )
-
-            records.sort(
-                key=lambda item: item[0]
-            )
-
-            for timestamp, value in records:
-
-                labels.append(
-                    self._format_timestamp(
+                    field_records[
+                        field_name
+                    ][
                         timestamp
-                    )
-                )
-
-                values.append(
-                    value
-                )
+                    ] = value
 
         except Exception:
 
             logger.exception(
-                "InfluxDB history query failed."
+                "InfluxDB multi-field history query failed."
+            )
+
+        timestamps = sorted(
+            {
+                timestamp
+                for records in field_records.values()
+                for timestamp in records
+            }
+        )
+
+        labels = [
+            self._format_timestamp(
+                timestamp
+            )
+            for timestamp in timestamps
+        ]
+
+        datasets: list[
+            dict[str, Any]
+        ] = []
+
+        for field_name in normalized_fields:
+
+            values = [
+                field_records[
+                    field_name
+                ].get(
+                    timestamp
+                )
+                for timestamp in timestamps
+            ]
+
+            datasets.append(
+                {
+                    "field": field_name,
+                    "values": values,
+                }
             )
 
         return {
             "labels": labels,
-            "values": values,
+            "datasets": datasets,
         }
 
-    # ---------------------------------------------------------
+    # ------------------------------------------------------------------
     # Flux builders
-    # ---------------------------------------------------------
+    # ------------------------------------------------------------------
 
-    def _build_query(
+    def _build_multi_query(
         self,
         *,
         device_id: int,
-        field: str,
+        fields: list[str],
         start: str,
+        stop: str | None,
         window: str,
     ) -> str:
+        """Build a Flux query for one or more fields."""
 
-        return f"""
-from(bucket: "{self._bucket}")
-|> range(start: {start})
-|> filter(fn: (r) => r["_measurement"] == "{self._measurement}")
-|> filter(fn: (r) => r["device_id"] == "{device_id}")
-|> filter(fn: (r) => r["_field"] == "{field}")
-|> aggregateWindow(
-    every: {window},
-    fn: mean,
-    createEmpty: false,
-)
-|> sort(columns: ["_time"])
-|> yield(name: "history")
-"""
+        escaped_bucket = (
+            self._escape_flux_string(
+                self._bucket
+            )
+        )
 
-    def _build_custom_query(
-        self,
-        *,
-        device_id: int,
-        field: str,
-        start: datetime,
-        stop: datetime,
-    ) -> str:
+        escaped_measurement = (
+            self._escape_flux_string(
+                self._measurement
+            )
+        )
 
-        seconds = (
-            stop - start
-        ).total_seconds()
+        escaped_device_id = (
+            self._escape_flux_string(
+                str(device_id)
+            )
+        )
 
-        if seconds <= 3600:
-            window = "10s"
+        field_conditions = " or ".join(
+            (
+                'r["_field"] == '
+                f'"{self._escape_flux_string(field)}"'
+            )
+            for field in fields
+        )
 
-        elif seconds <= 86400:
-            window = "1m"
+        if stop is None:
 
-        elif seconds <= 604800:
-            window = "10m"
+            range_clause = (
+                f"|> range(start: {start})"
+            )
 
         else:
-            window = "1h"
+
+            range_clause = (
+                "|> range(\n"
+                f"    start: {start},\n"
+                f"    stop: {stop},\n"
+                ")"
+            )
 
         return f"""
-from(bucket: "{self._bucket}")
-|> range(
-    start: time(v: "{start.isoformat()}"),
-    stop: time(v: "{stop.isoformat()}"),
+from(bucket: "{escaped_bucket}")
+{range_clause}
+|> filter(
+    fn: (r) =>
+        r["_measurement"] == "{escaped_measurement}"
 )
-|> filter(fn: (r) => r["_measurement"] == "{self._measurement}")
-|> filter(fn: (r) => r["device_id"] == "{device_id}")
-|> filter(fn: (r) => r["_field"] == "{field}")
+|> filter(
+    fn: (r) =>
+        r["device_id"] == "{escaped_device_id}"
+)
+|> filter(
+    fn: (r) =>
+        {field_conditions}
+)
 |> aggregateWindow(
     every: {window},
     fn: mean,
     createEmpty: false,
 )
-|> sort(columns: ["_time"])
-|> yield(name: "history")
+|> sort(
+    columns: [
+        "_time",
+        "_field",
+    ]
+)
+|> yield(
+    name: "history"
+)
 """

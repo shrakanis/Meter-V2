@@ -14,6 +14,8 @@ import os
 
 from flask import Flask
 
+from modbus.drivers.p1_smart_meter import P1SmartMeterDriver
+
 from database.db import Database
 from database.repositories import MeterRepository
 
@@ -199,6 +201,7 @@ def register_drivers() -> None:
     drivers = (
         SDM630Driver,
         PRO380Driver,
+        P1SmartMeterDriver,
     )
 
     for driver in drivers:

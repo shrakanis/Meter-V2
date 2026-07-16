@@ -346,23 +346,43 @@ def add_meter():
     form = MeterForm()
 
     if form.validate_on_submit():
+        meter_type = form.meter_type.data
+
+        driver = form.driver.data
+        protocol = Protocol(form.protocol.data)
+
+        if meter_type == "p1":
+
+            driver = "p1"
+
+            protocol = Protocol.RTU
+
         meter = Meter(
+
             enabled=form.enabled.data,
+
             name=form.name.data,
             description=form.description.data,
-            driver=form.driver.data,
-            protocol=Protocol(
-                form.protocol.data
-            ),
+
+            meter_type=meter_type,
+
+            driver=driver,
+
+            protocol=protocol,
+
             address=form.address.data,
             port=form.port.data,
+
             serial_port=form.serial_port.data,
             baudrate=form.baudrate.data,
             bytesize=form.bytesize.data,
             parity=form.parity.data,
             stopbits=form.stopbits.data,
+
             slave=form.slave.data,
+
             timeout=form.timeout.data,
+
             ct=form.ct.data,
             pt=form.pt.data,
         )
@@ -425,11 +445,21 @@ def edit_meter(
         meter.enabled = form.enabled.data
         meter.name = form.name.data
         meter.description = form.description.data
-        meter.driver = form.driver.data
+        meter.meter_type = form.meter_type.data
 
-        meter.protocol = Protocol(
-            form.protocol.data
-        )
+        if meter.is_p1:
+
+            meter.driver = "p1"
+
+            meter.protocol = Protocol.RTU
+
+        else:
+
+            meter.driver = form.driver.data
+
+            meter.protocol = Protocol(
+                form.protocol.data
+            )
 
         meter.address = form.address.data
         meter.port = form.port.data

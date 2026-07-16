@@ -355,21 +355,30 @@ class HistoryPage {
             data.unit
         );
 
-        this.chart.setLineLabel(
-            data.title
-        );
-
         this.chart.setDecimals(
             data.decimals
         );
 
-        this.chart.setData(
+        if (data.multi) {
 
-            data.labels,
+            this.chart.setDatasets(
+                data.labels,
+                data.datasets
+            );
 
-            data.values
+        } else {
 
-        );
+            this.chart.setLineLabel(
+                data.title
+            );
+
+            this.chart.setData(
+                data.labels,
+                data.values
+            );
+
+        }
+
         this.chart.resetZoom();
 
     }

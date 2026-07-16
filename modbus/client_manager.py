@@ -3,31 +3,52 @@ modbus/client_manager.py
 
 Energy Monitor V2
 
-Shared Modbus client manager.
+Shared communication client manager.
 """
 
 from __future__ import annotations
 
 from threading import Lock
+from typing import TypeAlias
 
 from common.enums import Protocol
 from database.models import Meter
+
 from modbus.clients.base import BaseClient
 from modbus.clients.rtu import RTUClient
 from modbus.clients.rtu_tcp import RTUOverTCPClient
 from modbus.clients.tcp import TCPClient
 
+from p1.client import P1Client
+
+
+CommunicationClient: TypeAlias = (
+    BaseClient
+    | P1Client
+)
+
 
 class ClientManager:
     """
-    Creates and caches shared Modbus clients.
+    Creates and caches shared communication clients.
+
+    Supported connections
+    ---------------------
+    - Modbus TCP
+    - Modbus RTU
+    - RTU over TCP
+    - P1 serial
 
     Devices using the same physical connection share one client.
     """
 
     def __init__(self) -> None:
 
-        self._clients: dict[str, BaseClient] = {}
+        self._clients: dict[
+            str,
+            CommunicationClient,
+        ] = {}
+
         self._lock = Lock()
 
     # ---------------------------------------------------------
@@ -38,11 +59,26 @@ class ClientManager:
         self,
         meter: Meter,
     ) -> str:
+        """
+        Create a unique key for the physical connection.
+        """
+
+        if meter.is_p1:
+
+            return (
+                "p1:"
+                f"{meter.serial_port}:"
+                f"{meter.baudrate}:"
+                f"{meter.bytesize}:"
+                f"{meter.parity}:"
+                f"{meter.stopbits}:"
+                f"{meter.timeout}"
+            )
 
         if meter.protocol == Protocol.TCP:
 
             return (
-                f"tcp:"
+                "tcp:"
                 f"{meter.address}:"
                 f"{meter.port}:"
                 f"{meter.timeout}"
@@ -51,7 +87,7 @@ class ClientManager:
         if meter.protocol == Protocol.RTU_OVER_TCP:
 
             return (
-                f"rtu-over-tcp:"
+                "rtu-over-tcp:"
                 f"{meter.address}:"
                 f"{meter.port}:"
                 f"{meter.timeout}"
@@ -60,7 +96,7 @@ class ClientManager:
         if meter.protocol == Protocol.RTU:
 
             return (
-                f"rtu:"
+                "rtu:"
                 f"{meter.serial_port}:"
                 f"{meter.baudrate}:"
                 f"{meter.bytesize}:"
@@ -70,7 +106,9 @@ class ClientManager:
             )
 
         raise ValueError(
-            f"Unsupported protocol: {meter.protocol}"
+            "Unsupported communication configuration: "
+            f"type={meter.normalized_meter_type}, "
+            f"protocol={meter.protocol}"
         )
 
     # ---------------------------------------------------------
@@ -80,7 +118,27 @@ class ClientManager:
     def _create(
         self,
         meter: Meter,
-    ) -> BaseClient:
+    ) -> CommunicationClient:
+        """
+        Create a communication client for one meter.
+        """
+
+        if meter.is_p1:
+
+            if not meter.serial_port:
+
+                raise ValueError(
+                    "P1 serial port is not configured."
+                )
+
+            return P1Client(
+                port=meter.serial_port,
+                baudrate=meter.baudrate,
+                bytesize=meter.bytesize,
+                parity=meter.parity,
+                stopbits=meter.stopbits,
+                timeout=meter.timeout,
+            )
 
         if meter.protocol == Protocol.TCP:
 
@@ -110,7 +168,9 @@ class ClientManager:
             )
 
         raise ValueError(
-            f"Unsupported protocol: {meter.protocol}"
+            "Unsupported communication configuration: "
+            f"type={meter.normalized_meter_type}, "
+            f"protocol={meter.protocol}"
         )
 
     # ---------------------------------------------------------
@@ -120,19 +180,30 @@ class ClientManager:
     def get_client(
         self,
         meter: Meter,
-    ) -> BaseClient:
+    ) -> CommunicationClient:
+        """
+        Return an existing shared client or create a new one.
+        """
 
-        key = self._key(meter)
+        key = self._key(
+            meter
+        )
 
         with self._lock:
 
-            client = self._clients.get(key)
+            client = self._clients.get(
+                key
+            )
 
             if client is None:
 
-                client = self._create(meter)
+                client = self._create(
+                    meter
+                )
 
-                self._clients[key] = client
+                self._clients[
+                    key
+                ] = client
 
             return client
 
@@ -144,8 +215,13 @@ class ClientManager:
         self,
         meter: Meter,
     ) -> None:
+        """
+        Close and remove one cached client.
+        """
 
-        key = self._key(meter)
+        key = self._key(
+            meter
+        )
 
         with self._lock:
 
@@ -154,18 +230,25 @@ class ClientManager:
                 None,
             )
 
-        if client is not None:
+        if client is None:
+            return
 
-            try:
-                client.disconnect()
-            except Exception:
-                pass
+        try:
+
+            client.disconnect()
+
+        except Exception:
+
+            pass
 
     # ---------------------------------------------------------
     # Close all
     # ---------------------------------------------------------
 
     def close_all(self) -> None:
+        """
+        Close all cached communication clients.
+        """
 
         with self._lock:
 
@@ -178,11 +261,21 @@ class ClientManager:
         for client in clients:
 
             try:
+
                 client.disconnect()
+
             except Exception:
+
                 pass
+
+    # ---------------------------------------------------------
+    # Helpers
+    # ---------------------------------------------------------
 
     def __len__(self) -> int:
 
         with self._lock:
-            return len(self._clients)
+
+            return len(
+                self._clients
+            )

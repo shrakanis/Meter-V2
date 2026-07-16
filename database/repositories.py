@@ -14,7 +14,10 @@ from database.models import Meter
 class MeterRepository:
     """Energy meter repository."""
 
-    def __init__(self, database: Database):
+    def __init__(
+        self,
+        database: Database,
+    ) -> None:
 
         self.database = database
 
@@ -54,7 +57,9 @@ class MeterRepository:
         if row is None:
             return None
 
-        return self._row_to_meter(row)
+        return self._row_to_meter(
+            row
+        )
 
     # ------------------------------------------------------------------
     # Create
@@ -74,6 +79,7 @@ class MeterRepository:
                 name,
                 description,
 
+                meter_type,
                 driver,
                 protocol,
 
@@ -97,10 +103,14 @@ class MeterRepository:
 
             VALUES(
 
-                ?, ?, ?, ?, ?,
+                ?,
+                ?, ?,
+                ?, ?, ?,
                 ?, ?,
                 ?, ?, ?, ?, ?,
-                ?, ?, ?, ?
+                ?,
+                ?,
+                ?, ?
 
             )
             """,
@@ -110,6 +120,7 @@ class MeterRepository:
                 meter.name,
                 meter.description,
 
+                meter.meter_type,
                 meter.driver,
                 int(meter.protocol),
 
@@ -155,6 +166,7 @@ class MeterRepository:
                 name=?,
                 description=?,
 
+                meter_type=?,
                 driver=?,
                 protocol=?,
 
@@ -182,6 +194,7 @@ class MeterRepository:
                 meter.name,
                 meter.description,
 
+                meter.meter_type,
                 meter.driver,
                 int(meter.protocol),
 
@@ -227,28 +240,69 @@ class MeterRepository:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _row_to_meter(row) -> Meter:
+    def _row_to_meter(
+        row,
+    ) -> Meter:
+
+        row_keys = set(
+            row.keys()
+        )
+
+        meter_type = (
+            row["meter_type"]
+            if "meter_type" in row_keys
+            else "modbus"
+        )
 
         return Meter(
-
             id=row["id"],
 
-            enabled=bool(row["enabled"]),
+            enabled=bool(
+                row["enabled"]
+            ),
 
             name=row["name"],
-            description=row["description"] or "",
 
-            driver=row["driver"],
+            description=(
+                row["description"]
+                or ""
+            ),
 
-            protocol=Protocol(row["protocol"]),
+            meter_type=(
+                meter_type
+                or "modbus"
+            ),
 
-            address=row["address"] or "",
+            driver=(
+                row["driver"]
+                or ""
+            ),
+
+            protocol=Protocol(
+                row["protocol"]
+            ),
+
+            address=(
+                row["address"]
+                or ""
+            ),
+
             port=row["port"],
 
-            serial_port=row["serial_port"] or "",
+            serial_port=(
+                row["serial_port"]
+                or ""
+            ),
+
             baudrate=row["baudrate"],
+
             bytesize=row["bytesize"],
-            parity=row["parity"],
+
+            parity=(
+                row["parity"]
+                or "N"
+            ),
+
             stopbits=row["stopbits"],
 
             slave=row["slave"],
@@ -256,5 +310,6 @@ class MeterRepository:
             timeout=row["timeout"],
 
             ct=row["ct"],
+
             pt=row["pt"],
         )

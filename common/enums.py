@@ -5,6 +5,7 @@ class Protocol(IntEnum):
     TCP = 1
     RTU = 2
     RTU_OVER_TCP = 3
+    P1 = 4
 
 
 class ByteOrder(Enum):
