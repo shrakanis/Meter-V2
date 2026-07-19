@@ -29,7 +29,13 @@ const chartHistory = {
     currentL2: [],
     currentL3: [],
 
-    activePowerTotal: [],
+    activePowerL1: [],
+    activePowerL2: [],
+    activePowerL3: [],
+
+    reactivePowerL1: [],
+    reactivePowerL2: [],
+    reactivePowerL3: [],
 };
 
 
@@ -382,6 +388,7 @@ function appendChartData(data) {
     const voltage = data.voltage || {};
     const current = data.current || {};
     const activePower = data.active_power || {};
+    const reactivePower = data.reactive_power || {};
 
     chartHistory.labels.push(
         currentTimeLabel()
@@ -411,8 +418,28 @@ function appendChartData(data) {
         numberOrNull(current.l3)
     );
 
-    chartHistory.activePowerTotal.push(
-        numberOrNull(activePower.total)
+    chartHistory.activePowerL1.push(
+        numberOrNull(activePower.l1)
+    );
+
+    chartHistory.activePowerL2.push(
+        numberOrNull(activePower.l2)
+    );
+
+    chartHistory.activePowerL3.push(
+        numberOrNull(activePower.l3)
+    );
+
+    chartHistory.reactivePowerL1.push(
+        numberOrNull(reactivePower.l1)
+    );
+
+    chartHistory.reactivePowerL2.push(
+        numberOrNull(reactivePower.l2)
+    );
+
+    chartHistory.reactivePowerL3.push(
+        numberOrNull(reactivePower.l3)
     );
 
     trimChartHistory();
@@ -440,7 +467,13 @@ function trimChartHistory() {
     trimArray(chartHistory.currentL2);
     trimArray(chartHistory.currentL3);
 
-    trimArray(chartHistory.activePowerTotal);
+    trimArray(chartHistory.activePowerL1);
+    trimArray(chartHistory.activePowerL2);
+    trimArray(chartHistory.activePowerL3);
+
+    trimArray(chartHistory.reactivePowerL1);
+    trimArray(chartHistory.reactivePowerL2);
+    trimArray(chartHistory.reactivePowerL3);
 }
 
 
@@ -449,64 +482,13 @@ function trimChartHistory() {
  * ========================================================== */
 
 
-function chartDatasets() {
-    if (selectedChartType === "current") {
-        return [
-            {
-                label: "L1",
-                data: chartHistory.currentL1,
-                borderColor: "#f4c542",
-                backgroundColor: "#f4c542",
-                borderWidth: 2,
-                pointRadius: 0,
-                tension: 0.15,
-                spanGaps: true,
-            },
-            {
-                label: "L2",
-                data: chartHistory.currentL2,
-                borderColor: "#4ea1ff",
-                backgroundColor: "#4ea1ff",
-                borderWidth: 2,
-                pointRadius: 0,
-                tension: 0.15,
-                spanGaps: true,
-            },
-            {
-                label: "L3",
-                data: chartHistory.currentL3,
-                borderColor: "#ff6666",
-                backgroundColor: "#ff6666",
-                borderWidth: 2,
-                pointRadius: 0,
-                tension: 0.15,
-                spanGaps: true,
-            },
-        ];
-    }
-
-    if (selectedChartType === "power") {
-        return [
-            {
-                label: "Total active power",
-                data: chartHistory.activePowerTotal,
-                borderColor: "#f39c12",
-                backgroundColor: "#f39c12",
-                borderWidth: 2,
-                pointRadius: 0,
-                tension: 0.15,
-                spanGaps: true,
-                fill: false,
-            },
-        ];
-    }
-
+function phaseDatasets(l1, l2, l3) {
     return [
         {
             label: "L1",
-            data: chartHistory.voltageL1,
-            borderColor: "#f4c542",
-            backgroundColor: "#f4c542",
+            data: l1,
+            borderColor: "#e53935",
+            backgroundColor: "#e53935",
             borderWidth: 2,
             pointRadius: 0,
             tension: 0.15,
@@ -514,9 +496,9 @@ function chartDatasets() {
         },
         {
             label: "L2",
-            data: chartHistory.voltageL2,
-            borderColor: "#4ea1ff",
-            backgroundColor: "#4ea1ff",
+            data: l2,
+            borderColor: "#fbc02d",
+            backgroundColor: "#fbc02d",
             borderWidth: 2,
             pointRadius: 0,
             tension: 0.15,
@@ -524,9 +506,9 @@ function chartDatasets() {
         },
         {
             label: "L3",
-            data: chartHistory.voltageL3,
-            borderColor: "#ff6666",
-            backgroundColor: "#ff6666",
+            data: l3,
+            borderColor: "#1e88e5",
+            backgroundColor: "#1e88e5",
             borderWidth: 2,
             pointRadius: 0,
             tension: 0.15,
@@ -536,13 +518,50 @@ function chartDatasets() {
 }
 
 
+function chartDatasets() {
+    if (selectedChartType === "current") {
+        return phaseDatasets(
+            chartHistory.currentL1,
+            chartHistory.currentL2,
+            chartHistory.currentL3
+        );
+    }
+
+    if (selectedChartType === "active-power") {
+        return phaseDatasets(
+            chartHistory.activePowerL1,
+            chartHistory.activePowerL2,
+            chartHistory.activePowerL3
+        );
+    }
+
+    if (selectedChartType === "reactive-power") {
+        return phaseDatasets(
+            chartHistory.reactivePowerL1,
+            chartHistory.reactivePowerL2,
+            chartHistory.reactivePowerL3
+        );
+    }
+
+    return phaseDatasets(
+        chartHistory.voltageL1,
+        chartHistory.voltageL2,
+        chartHistory.voltageL3
+    );
+}
+
+
 function chartUnit() {
     if (selectedChartType === "current") {
         return "A";
     }
 
-    if (selectedChartType === "power") {
+    if (selectedChartType === "active-power") {
         return "kW";
+    }
+
+    if (selectedChartType === "reactive-power") {
+        return "kvar";
     }
 
     return "V";
@@ -554,8 +573,12 @@ function chartTitle() {
         return "Live current";
     }
 
-    if (selectedChartType === "power") {
+    if (selectedChartType === "active-power") {
         return "Live active power";
+    }
+
+    if (selectedChartType === "reactive-power") {
+        return "Live reactive power";
     }
 
     return "Live voltage";

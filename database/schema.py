@@ -11,7 +11,7 @@ from __future__ import annotations
 import sqlite3
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 def create_schema(
@@ -89,6 +89,47 @@ def create_schema(
             ct REAL NOT NULL DEFAULT 1.0,
             pt REAL NOT NULL DEFAULT 1.0
 
+        )
+        """
+    )
+
+
+    # ------------------------------------------------------------------
+    # Mimic diagrams
+    # ------------------------------------------------------------------
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS mimic_diagrams (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            background_image TEXT NOT NULL DEFAULT '',
+            canvas_width INTEGER NOT NULL DEFAULT 1600,
+            canvas_height INTEGER NOT NULL DEFAULT 900
+        )
+        """
+    )
+
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS mimic_widgets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            diagram_id INTEGER NOT NULL,
+            title TEXT NOT NULL DEFAULT '',
+            meter_id INTEGER,
+            measurement TEXT NOT NULL DEFAULT 'active_power.total',
+            widget_type TEXT NOT NULL DEFAULT 'equipment',
+            x REAL NOT NULL DEFAULT 10.0,
+            y REAL NOT NULL DEFAULT 10.0,
+            width REAL NOT NULL DEFAULT 12.0,
+            nominal_power REAL,
+            running_threshold REAL NOT NULL DEFAULT 1.0,
+            decimals INTEGER NOT NULL DEFAULT 2,
+            show_status INTEGER NOT NULL DEFAULT 1,
+            show_percent INTEGER NOT NULL DEFAULT 1,
+            FOREIGN KEY(diagram_id) REFERENCES mimic_diagrams(id) ON DELETE CASCADE,
+            FOREIGN KEY(meter_id) REFERENCES meters(id) ON DELETE SET NULL
         )
         """
     )
@@ -268,6 +309,53 @@ def migrate(
         )
 
         version = 2
+
+
+    # ------------------------------------------------------------------
+    # Version 2 -> Version 3
+    # Add image based mimic diagrams and live widgets
+    # ------------------------------------------------------------------
+
+    if version < 3:
+
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS mimic_diagrams (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                description TEXT NOT NULL DEFAULT '',
+                background_image TEXT NOT NULL DEFAULT '',
+                canvas_width INTEGER NOT NULL DEFAULT 1600,
+                canvas_height INTEGER NOT NULL DEFAULT 900
+            )
+            """
+        )
+
+        connection.execute(
+            """
+            CREATE TABLE IF NOT EXISTS mimic_widgets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                diagram_id INTEGER NOT NULL,
+                title TEXT NOT NULL DEFAULT '',
+                meter_id INTEGER,
+                measurement TEXT NOT NULL DEFAULT 'active_power.total',
+                widget_type TEXT NOT NULL DEFAULT 'equipment',
+                x REAL NOT NULL DEFAULT 10.0,
+                y REAL NOT NULL DEFAULT 10.0,
+                width REAL NOT NULL DEFAULT 12.0,
+                nominal_power REAL,
+                running_threshold REAL NOT NULL DEFAULT 1.0,
+                decimals INTEGER NOT NULL DEFAULT 2,
+                show_status INTEGER NOT NULL DEFAULT 1,
+                show_percent INTEGER NOT NULL DEFAULT 1,
+                FOREIGN KEY(diagram_id) REFERENCES mimic_diagrams(id) ON DELETE CASCADE,
+                FOREIGN KEY(meter_id) REFERENCES meters(id) ON DELETE SET NULL
+            )
+            """
+        )
+
+        set_schema_version(connection, 3)
+        version = 3
 
     # ------------------------------------------------------------------
     # Final version check

@@ -79,6 +79,16 @@ class HistoryPage {
                 "history-reset-zoom"
             );
 
+        this.exportExcelButton =
+            document.getElementById(
+                "history-export-excel"
+            );
+
+        this.exportPdfButton =
+            document.getElementById(
+                "history-export-pdf"
+            );
+
         this.customContainer =
             document.getElementById(
                 "history-custom-range"
@@ -142,6 +152,32 @@ class HistoryPage {
             () => {
 
                 this.chart.resetZoom();
+            }
+        );
+
+
+        this.exportExcelButton.addEventListener(
+
+            "click",
+
+            () => {
+
+                this.exportHistory(
+                    "xlsx"
+                );
+            }
+        );
+
+
+        this.exportPdfButton.addEventListener(
+
+            "click",
+
+            () => {
+
+                this.exportHistory(
+                    "pdf"
+                );
             }
         );
 
@@ -517,6 +553,75 @@ class HistoryPage {
             unitElement.textContent =
                 unit || "";
         }
+    }
+
+
+    /* ------------------------------------------------------- */
+
+    exportHistory(format) {
+
+        this.hideError();
+
+        if (
+            this.range ===
+            "custom"
+        ) {
+
+            const start =
+                this.customStart.value;
+
+            const stop =
+                this.customStop.value;
+
+            if (!start || !stop) {
+
+                this.showError(
+                    "Select both start and stop time."
+                );
+
+                return;
+            }
+
+            const startDate =
+                new Date(start);
+
+            const stopDate =
+                new Date(stop);
+
+            if (
+                Number.isNaN(startDate.getTime()) ||
+                Number.isNaN(stopDate.getTime()) ||
+                stopDate <= startDate
+            ) {
+
+                this.showError(
+                    "Invalid custom time range."
+                );
+
+                return;
+            }
+
+            this.start =
+                startDate.toISOString();
+
+            this.stop =
+                stopDate.toISOString();
+        }
+
+        const url =
+            this.buildUrl();
+
+        url.pathname =
+            url.pathname.replace(
+                /\/$/,
+                ""
+            ) +
+            "/export/" +
+            format;
+
+        window.location.assign(
+            url.toString()
+        );
     }
 
 

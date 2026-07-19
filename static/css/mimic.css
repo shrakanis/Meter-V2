@@ -1,0 +1,277 @@
+.mimic-list-preview,
+.mimic-list-placeholder {
+    aspect-ratio: 16 / 9;
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.mimic-list-preview img,
+.mimic-form-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #fff;
+}
+
+.mimic-list-placeholder {
+    color: var(--muted);
+    background: var(--surface-2);
+}
+
+.mimic-form-preview {
+    max-height: 320px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: #fff;
+}
+
+.mimic-workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+}
+
+.mimic-workspace.is-editing {
+    grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.mimic-stage-column {
+    min-width: 0;
+}
+
+.mimic-stage {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 3px 16px rgba(0, 0, 0, .35);
+    user-select: none;
+}
+
+.mimic-background {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    pointer-events: none;
+}
+
+.mimic-no-background {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #666;
+    background: #f6f6f6;
+}
+
+.mimic-widget {
+    position: absolute;
+    z-index: 2;
+    min-width: 72px;
+    padding: 5px 7px;
+    background: rgba(255, 255, 255, .94);
+    color: #111;
+    border: 2px solid #444;
+    border-radius: 3px;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, .28);
+    font-size: clamp(8px, .78vw, 14px);
+    line-height: 1.15;
+    text-align: center;
+    transform: translate(-50%, -50%);
+}
+
+.mimic-widget-value {
+    font-weight: 700;
+    font-size: 1.08em;
+    white-space: nowrap;
+    margin: 3px 0;
+}
+
+.mimic-widget-title {
+    background: #ffef00;
+    border: 1px solid #f43b21;
+    color: #111;
+    font-weight: 700;
+    padding: 1px 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mimic-widget-status {
+    margin-top: 2px;
+    padding: 2px 3px;
+    font-weight: 600;
+    color: #fff;
+    background: #6c757d;
+}
+
+.mimic-widget-status.is-running {
+    background: #198754;
+}
+
+.mimic-widget-status.is-stopped {
+    background: #dc3545;
+}
+
+.mimic-widget-status.is-offline {
+    background: #6c757d;
+}
+
+.mimic-widget-percent {
+    margin-top: 3px;
+    font-weight: 800;
+    font-size: 1.22em;
+}
+
+.mimic-widget-value .unit {
+    font-weight: 500;
+}
+
+.mimic-widget-value.missing {
+    color: #777;
+}
+
+.mimic-widget-value-only .mimic-widget-status,
+.mimic-widget-value-only .mimic-widget-percent {
+    display: none !important;
+}
+
+.mimic-workspace.is-editing .mimic-widget {
+    cursor: move;
+    outline: 1px dashed rgba(13, 110, 253, .7);
+}
+
+.mimic-workspace.is-editing .mimic-widget.is-selected {
+    outline: 3px solid #0d6efd;
+    z-index: 10;
+}
+
+.mimic-widget-drag-hint {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: #0d6efd;
+    color: #fff;
+    font-size: 11px;
+}
+
+.mimic-editor {
+    position: sticky;
+    top: 18px;
+}
+
+@media (max-width: 1100px) {
+    .mimic-workspace.is-editing {
+        grid-template-columns: 1fr;
+    }
+
+    .mimic-editor {
+        position: static;
+    }
+}
+
+@media (max-width: 700px) {
+    .mimic-widget {
+        font-size: 7px;
+        padding: 3px 4px;
+    }
+
+    .mimic-widget-title,
+    .mimic-widget-status {
+        padding: 1px 2px;
+    }
+}
+
+/* Fullscreen diagram -------------------------------------------------- */
+
+.mimic-toolbar {
+    position: relative;
+    z-index: 20;
+}
+
+#mimic-page:fullscreen,
+#mimic-page.mimic-pseudo-fullscreen {
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    overflow: hidden;
+    background: #111;
+    color: #fff;
+}
+
+#mimic-page.mimic-pseudo-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+}
+
+body.mimic-fullscreen-body {
+    overflow: hidden;
+}
+
+#mimic-page.is-fullscreen .mimic-toolbar {
+    margin-bottom: 8px !important;
+    padding: 6px 8px;
+    border: 1px solid rgba(255, 255, 255, .14);
+    border-radius: 8px;
+    background: rgba(20, 20, 20, .92);
+}
+
+#mimic-page.is-fullscreen .mimic-toolbar .text-muted {
+    color: #c8c8c8 !important;
+}
+
+#mimic-page.is-fullscreen .mimic-workspace {
+    height: calc(100vh - 76px);
+    gap: 10px;
+}
+
+#mimic-page.is-fullscreen .mimic-stage-column {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+#mimic-page.is-fullscreen .mimic-stage {
+    flex: 0 0 auto;
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 4px;
+}
+
+#mimic-page.is-fullscreen .mimic-editor {
+    max-height: calc(100vh - 86px);
+    overflow-y: auto;
+    top: 0;
+}
+
+@media (max-width: 700px) {
+    #mimic-page.is-fullscreen {
+        padding: 5px;
+    }
+
+    #mimic-page.is-fullscreen .mimic-toolbar {
+        padding: 4px;
+    }
+}

@@ -18,6 +18,10 @@ from modbus.drivers.p1_smart_meter import P1SmartMeterDriver
 
 from database.db import Database
 from database.repositories import MeterRepository
+from database.mimic_repositories import (
+    MimicDiagramRepository,
+    MimicWidgetRepository,
+)
 
 from influx.client import InfluxClient
 from influx.history import HistoryReader
@@ -25,11 +29,15 @@ from influx.recorder import MeasurementRecorder
 
 from modbus.device_manager import DeviceManager
 from modbus.drivers.factory import DriverFactory
+from modbus.drivers.dtsu666 import DTSU666Driver
 from modbus.drivers.pro380 import PRO380Driver
+from modbus.drivers.rail350 import Rail350Driver
 from modbus.drivers.sdm630 import SDM630Driver
 
 from web.history import history
+from web.mimic import mimic
 from web.pages import pages
+from web.system_settings import system_settings
 
 
 logger = logging.getLogger(__name__)
@@ -81,6 +89,14 @@ class Application:
         # ---------------------------------------------------------
 
         self.meters = MeterRepository(
+            self.database
+        )
+
+        self.mimic_diagrams = MimicDiagramRepository(
+            self.database
+        )
+
+        self.mimic_widgets = MimicWidgetRepository(
             self.database
         )
 
@@ -201,6 +217,8 @@ def register_drivers() -> None:
     drivers = (
         SDM630Driver,
         PRO380Driver,
+        Rail350Driver,
+        DTSU666Driver,
         P1SmartMeterDriver,
     )
 
@@ -269,6 +287,14 @@ def create_app() -> Flask:
 
     app.register_blueprint(
         history
+    )
+
+    app.register_blueprint(
+        mimic
+    )
+
+    app.register_blueprint(
+        system_settings
     )
 
     # ---------------------------------------------------------

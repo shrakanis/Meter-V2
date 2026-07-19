@@ -9,7 +9,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-from database.schema import create_schema
+from database.schema import create_schema, migrate
 
 
 class Database:
@@ -40,6 +40,7 @@ class Database:
         self._configure()
 
         create_schema(self.connection)
+        migrate(self.connection)
 
     def _configure(self):
 

@@ -11,9 +11,14 @@ from __future__ import annotations
 import logging
 import socket
 import threading
+import time
 
 from modbus.clients.base import BaseClient
-from modbus.exceptions import ConnectionError, TimeoutError
+from modbus.exceptions import (
+    ConnectionError,
+    RegisterError,
+    TimeoutError,
+)
 from modbus.register_block import RegisterBlock
 from modbus.rtu_codec import (
     build_read_holding,
@@ -40,11 +45,15 @@ class RTUOverTCPClient(BaseClient):
         host: str,
         port: int = 5000,
         timeout: float = 1.0,
+        retries: int = 2,
+        retry_delay: float = 0.15,
     ) -> None:
 
         self.host = host
         self.port = port
         self.timeout = timeout
+        self.retries = max(0, int(retries))
+        self.retry_delay = max(0.0, float(retry_delay))
 
         self._socket: socket.socket | None = None
         self._lock = threading.RLock()
@@ -301,6 +310,78 @@ class RTUOverTCPClient(BaseClient):
     # Read
     # ---------------------------------------------------------
 
+    def _read_with_retry(
+        self,
+        *,
+        frame: bytes,
+        slave: int,
+        function: int,
+    ) -> RegisterBlock:
+        """
+        Execute one RTU read and recover from a corrupt/stale frame.
+
+        A CRC or frame validation error means the TCP stream may no
+        longer be aligned to the beginning of an RTU frame. Keeping
+        that socket open can make every following request fail. The
+        connection is therefore closed and recreated before retrying.
+        """
+
+        attempts = self.retries + 1
+        last_error: Exception | None = None
+
+        for attempt in range(1, attempts + 1):
+
+            try:
+
+                response = self._exchange(frame)
+
+                return parse_read_response(
+                    response,
+                    expected_slave=slave,
+                    expected_function=function,
+                )
+
+            except RegisterError as ex:
+
+                last_error = ex
+
+                logger.warning(
+                    "Invalid RTU frame from %s:%s "
+                    "(attempt %s/%s): %s",
+                    self.host,
+                    self.port,
+                    attempt,
+                    attempts,
+                    ex,
+                )
+
+                # A bad CRC, wrong slave/function or malformed length
+                # can leave unread/stale bytes in the TCP stream.
+                # Reusing the same socket would keep the stream out of
+                # sync, so force a clean TCP connection.
+                self.disconnect()
+
+            except (ConnectionError, TimeoutError) as ex:
+
+                last_error = ex
+
+                # _exchange() already disconnects, but calling it here
+                # is harmless and guarantees a clean retry state.
+                self.disconnect()
+
+            if attempt < attempts and self.retry_delay > 0:
+
+                time.sleep(
+                    self.retry_delay
+                )
+
+        if last_error is not None:
+            raise last_error
+
+        raise RegisterError(
+            "RTU over TCP read failed."
+        )
+
     def read_holding_registers(
         self,
         slave: int,
@@ -314,9 +395,11 @@ class RTUOverTCPClient(BaseClient):
             count=count,
         )
 
-        response = self._exchange(frame)
-
-        return parse_read_response(response)
+        return self._read_with_retry(
+            frame=frame,
+            slave=slave,
+            function=0x03,
+        )
 
     def read_input_registers(
         self,
@@ -331,9 +414,11 @@ class RTUOverTCPClient(BaseClient):
             count=count,
         )
 
-        response = self._exchange(frame)
-
-        return parse_read_response(response)
+        return self._read_with_retry(
+            frame=frame,
+            slave=slave,
+            function=0x04,
+        )
 
     # ---------------------------------------------------------
     # Write

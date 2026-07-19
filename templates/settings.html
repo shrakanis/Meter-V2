@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Energy Monitor V2{% endblock %}
+{% block page_title %}Settings{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="settings-grid">
+    <section class="settings-card">
+        <div class="settings-card-header">
+            <div><i class="bi bi-globe2"></i><h5>Network</h5></div>
+        </div>
+
+        <form method="post" action="{{ url_for('system_settings.save_network') }}" class="network-form">
+            <div class="settings-field">
+                <label for="hostname">Hostname</label>
+                <input id="hostname" class="form-control" name="hostname" value="{{ network.hostname }}" required>
+            </div>
+            <div class="settings-field">
+                <label for="interface">Interface</label>
+                <input id="interface" class="form-control" name="interface" value="{{ network.interface }}" required>
+            </div>
+            <div class="settings-field">
+                <label for="ip_address">IP</label>
+                <input id="ip_address" class="form-control" name="ip_address" value="{{ network.ip_address }}" placeholder="192.168.0.100" required>
+            </div>
+            <div class="settings-field">
+                <label for="subnet_mask">Subnet Mask</label>
+                <input id="subnet_mask" class="form-control" name="subnet_mask" value="{{ network.subnet_mask }}" placeholder="255.255.255.0" required>
+            </div>
+            <div class="settings-field">
+                <label for="gateway">Gateway</label>
+                <input id="gateway" class="form-control" name="gateway" value="{{ network.gateway }}" placeholder="192.168.0.1" required>
+            </div>
+            <div class="settings-field">
+                <label for="dns">DNS</label>
+                <input id="dns" class="form-control" name="dns" value="{{ network.dns }}" placeholder="8.8.8.8">
+            </div>
+
+            <div class="network-actions">
+                <button class="btn btn-primary" type="submit"><i class="bi bi-save me-2"></i>Save network settings</button>
+            </div>
+        </form>
+
+        <p class="settings-note">IP pakeitimas pradedamas naudoti perkrovus Orange Pi. Prieš išsaugodamas įsitikink, kad naujas IP neužimtas.</p>
+    </section>
+
+    <section class="settings-card">
+        <div class="settings-card-header">
+            <div><i class="bi bi-gear"></i><h5>Services</h5></div>
+        </div>
+
+        <div class="service-list">
+            <form method="post" action="{{ url_for('system_settings.system_action', action='restart-app') }}">
+                <div class="service-row">
+                    <div><strong>Restart Energy Monitor</strong><small>Perkrauti Energy Monitor programą</small></div>
+                    <button class="btn btn-outline-dark" onclick="return confirm('Perkrauti Energy Monitor servisą?')">Restart</button>
+                </div>
+            </form>
+            <form method="post" action="{{ url_for('system_settings.system_action', action='restart-influx') }}">
+                <div class="service-row">
+                    <div><strong>Restart InfluxDB</strong><small>Perkrauti Docker / InfluxDB</small></div>
+                    <button class="btn btn-outline-dark" onclick="return confirm('Perkrauti Docker / InfluxDB?')">Restart</button>
+                </div>
+            </form>
+            <form method="post" action="{{ url_for('system_settings.system_action', action='reboot') }}">
+                <div class="service-row">
+                    <div><strong>Reboot Orange Pi</strong><small>Perkrauti visą Orange Pi</small></div>
+                    <button class="btn btn-outline-warning" onclick="return confirm('Tikrai perkrauti Orange Pi?')">Reboot</button>
+                </div>
+            </form>
+            <form method="post" action="{{ url_for('system_settings.system_action', action='shutdown') }}">
+                <div class="service-row">
+                    <div><strong>Shutdown Orange Pi</strong><small>Saugiai išjungti Orange Pi</small></div>
+                    <button class="btn btn-danger" onclick="return confirm('Tikrai išjungti Orange Pi? Įjungti reikės fiziškai paduodant maitinimą.')">Shutdown</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section class="settings-card">
+        <div class="settings-card-header">
+            <div><i class="bi bi-archive"></i><h5>Backup</h5></div>
+        </div>
+
+        <div class="backup-row">
+            <div><strong>Create Backup</strong><small>Atsisiųsti SQLite duomenis, .env ir Mimic paveikslėlius.</small></div>
+            <a class="btn btn-success" href="{{ url_for('system_settings.backup') }}"><i class="bi bi-download me-2"></i>Create Backup</a>
+        </div>
+
+        <div class="backup-row backup-restore">
+            <div><strong>Restore Backup</strong><small>Atkurti sistemą iš anksčiau sukurto ZIP failo.</small></div>
+            <form method="post" action="{{ url_for('system_settings.restore') }}" enctype="multipart/form-data">
+                <input class="form-control" type="file" name="backup_file" accept=".zip" required>
+                <button class="btn btn-primary" onclick="return confirm('Atkurti backup? Dabartiniai duomenys bus perrašyti.')">Restore</button>
+            </form>
+        </div>
+    </section>
+
+    <section class="settings-card">
+        <div class="settings-card-header">
+            <div><i class="bi bi-activity"></i><h5>Diagnostics</h5></div>
+        </div>
+        <dl class="diagnostics-list">
+            <div><dt>CPU</dt><dd>{{ diagnostics.cpu_percent }}%</dd></div>
+            <div><dt>RAM</dt><dd>{{ diagnostics.memory_used_mb }} / {{ diagnostics.memory_total_mb }} MB</dd></div>
+            <div><dt>Disk</dt><dd>{{ diagnostics.disk_used_gb }} / {{ diagnostics.disk_total_gb }} GB</dd></div>
+            <div><dt>Temperature</dt><dd>{% if diagnostics.temperature is not none %}{{ diagnostics.temperature }} °C{% else %}N/A{% endif %}</dd></div>
+            <div><dt>Uptime</dt><dd>{{ diagnostics.uptime }}</dd></div>
+            <div><dt>Energy Monitor</dt><dd><span class="status-pill status-{{ diagnostics.energy_monitor }}">{{ diagnostics.energy_monitor }}</span></dd></div>
+            <div><dt>Docker / InfluxDB</dt><dd><span class="status-pill status-{{ diagnostics.influxdb }}">{{ diagnostics.influxdb }}</span></dd></div>
+        </dl>
+    </section>
+</div>
+{% endblock %}

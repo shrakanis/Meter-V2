@@ -1,0 +1,11 @@
+Energy Monitor V2 v1.6 - History export
+
+Added:
+- History export to Excel (.xlsx)
+- History export to PDF
+- Export uses the selected meter, parameter, and time range
+- Supports preset ranges (1h, 24h, 7d, 30d)
+- Supports custom From/To date and time
+- Multi-phase parameters export into separate L1/L2/L3 columns
+- Exports are generated locally and work without internet
+- No additional Python packages are required

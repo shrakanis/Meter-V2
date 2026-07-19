@@ -88,6 +88,14 @@
             </a>
 
             <a
+                class="nav-link text-light"
+                href="{{ url_for('mimic.diagrams') }}"
+            >
+                <i class="bi bi-diagram-3 me-2"></i>
+                Mimic diagram
+            </a>
+
+            <a
                 class="nav-link text-secondary disabled"
                 href="#"
             >
@@ -104,8 +112,8 @@
             </a>
 
             <a
-                class="nav-link text-secondary disabled"
-                href="#"
+                class="nav-link text-light"
+                href="{{ url_for('system_settings.index') }}"
             >
                 <i class="bi bi-gear me-2"></i>
                 Settings

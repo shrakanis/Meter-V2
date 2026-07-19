@@ -133,6 +133,9 @@ def build_write_registers(
 
 def parse_read_response(
     frame: bytes,
+    *,
+    expected_slave: int | None = None,
+    expected_function: int | None = None,
 ) -> RegisterBlock:
     """
     Parse Read Holding/Input response.
@@ -146,6 +149,27 @@ def parse_read_response(
 
     slave = frame[0]
     function = frame[1]
+
+    if (
+        expected_slave is not None
+        and slave != expected_slave
+    ):
+        raise RegisterError(
+            f"Unexpected slave {slave}; "
+            f"expected {expected_slave}."
+        )
+
+    if (
+        expected_function is not None
+        and function not in (
+            expected_function,
+            expected_function | 0x80,
+        )
+    ):
+        raise RegisterError(
+            f"Unexpected function 0x{function:02X}; "
+            f"expected 0x{expected_function:02X}."
+        )
 
     if function & 0x80:
 

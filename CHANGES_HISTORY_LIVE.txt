@@ -1,0 +1,24 @@
+Energy Monitor V2 - History and Live chart fixes
+
+Changed files:
+- static/js/chart-manager.js
+  * Added setDatasets(labels, datasets)
+  * Added multi-line empty-state detection
+  * Added multi-dataset statistics and CSV export
+  * Kept setData() backward compatible
+  * Fixed L1/L2/L3 colors across history charts
+
+- static/js/device.js
+  * Fixed a JavaScript syntax error in reactive L3 display
+  * Added live Active Power L1/L2/L3 data
+  * Added live Reactive Power L1/L2/L3 data
+  * Uses signed reactive values already returned by the backend
+
+- templates/device.html
+  * Added separate Active power and Reactive power live chart buttons
+
+Validation performed:
+- Python compileall passed
+- node --check passed for chart-manager.js
+- node --check passed for history.js
+- node --check passed for device.js

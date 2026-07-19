@@ -18,10 +18,16 @@ from flask import (
     jsonify,
     render_template,
     request,
+    send_file,
 )
 
 from influx.history import HistoryReader
 from modbus.device import Device
+from web.history_export import (
+    build_pdf,
+    build_xlsx,
+    export_filename,
+)
 
 
 history = Blueprint(
@@ -761,3 +767,95 @@ def history_api(
             ),
         }
     )
+
+# ----------------------------------------------------------------------
+# History export
+# ----------------------------------------------------------------------
+
+
+@history.route(
+    "/api/history/<int:device_id>/export/<string:export_format>"
+)
+def history_export(
+    device_id: int,
+    export_format: str,
+):
+    """Export the currently selected history range to PDF or Excel."""
+
+    normalized_format = export_format.strip().lower()
+
+    if normalized_format not in {"pdf", "xlsx"}:
+        return error_response(
+            "Unsupported export format.",
+            404,
+        )
+
+    api_response = history_api(
+        device_id
+    )
+
+    if isinstance(api_response, tuple):
+        return api_response
+
+    payload = api_response.get_json(
+        silent=True
+    )
+
+    if not isinstance(payload, dict):
+        return error_response(
+            "Could not prepare history export.",
+            500,
+        )
+
+    if not payload.get("ok"):
+        return api_response
+
+    device_name = str(
+        payload.get("device", {}).get(
+            "name",
+            f"device_{device_id}",
+        )
+    )
+
+    try:
+        if normalized_format == "xlsx":
+            document = build_xlsx(
+                payload
+            )
+            return send_file(
+                document,
+                mimetype=(
+                    "application/vnd.openxmlformats-officedocument."
+                    "spreadsheetml.sheet"
+                ),
+                as_attachment=True,
+                download_name=export_filename(
+                    device_name,
+                    "xlsx",
+                ),
+                max_age=0,
+            )
+
+        document = build_pdf(
+            payload
+        )
+        return send_file(
+            document,
+            mimetype="application/pdf",
+            as_attachment=True,
+            download_name=export_filename(
+                device_name,
+                "pdf",
+            ),
+            max_age=0,
+        )
+
+    except Exception:
+        current_app.logger.exception(
+            "History export failed for device %s.",
+            device_id,
+        )
+        return error_response(
+            "History export failed.",
+            500,
+        )
